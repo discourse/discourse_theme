@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "minitest", "~> 5.0"
 
-  spec.add_dependency "minitar", "~> 0.5"
+  spec.add_dependency "minitar", "~> 0.6"
   spec.add_dependency "listen", "~> 3.1"
   spec.add_dependency "multipart-post", "~> 2.0"
 
