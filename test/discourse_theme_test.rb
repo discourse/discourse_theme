@@ -5,7 +5,6 @@ class DiscourseThemeTest < Minitest::Test
     refute_nil ::DiscourseTheme::VERSION
   end
 
-  def test_it_does_something_useful
-    assert false
-  end
+  # this is going to be fun, I want to add tests but we got to make
+  # sure this does not become mock central
 end

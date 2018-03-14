@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "minitar", "~> 0.5"
   spec.add_dependency "listen", "~> 3.1"
+  spec.add_dependency "multipart-post", "~> 2.0"
 
   spec.required_ruby_version = '>= 2.2.0'
 end
