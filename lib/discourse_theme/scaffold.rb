@@ -40,7 +40,7 @@ class DiscourseTheme::Scaffold
     Are you a bit lost? Be sure to read https://meta.discourse.org/t/how-to-develop-custom-themes/60848
   STR
 
-  GIT_IGNORE <<~STR
+  GIT_IGNORE = <<~STR
     .discourse-site
     HELP
   STR

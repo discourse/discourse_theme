@@ -72,7 +72,7 @@ class DiscourseTheme::Cli
     usage unless ARGV[1]
 
     command = ARGV[0].to_s.downcase
-    dir = expand_path(ARGV[1])
+    dir = File.expand_path(ARGV[1])
 
     dir_exists = File.exist?(dir)
 
@@ -99,6 +99,9 @@ class DiscourseTheme::Cli
       end
 
       uploader = DiscourseTheme::Uploader.new(dir: dir, api_key: api_key, site: site)
+      print "Uploading theme from #{dir} to #{site} : "
+      uploader.upload_full_theme
+
       watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
 
       watcher.watch

@@ -1,5 +1,5 @@
 class DiscourseTheme::Watcher
-  def initialize(dir, uploader)
+  def initialize(dir:, uploader:)
     @dir = dir
     @uploader = uploader
   end
@@ -27,6 +27,7 @@ class DiscourseTheme::Watcher
     end
 
     listener.start
+    sleep
 
   end
 

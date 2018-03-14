@@ -75,12 +75,12 @@ class DiscourseTheme::Uploader
     end
   end
 
-  def upload_full_theme(dir, site)
+  def upload_full_theme
     filename = "#{Pathname.new(Dir.tmpdir).realpath}/bundle_#{SecureRandom.hex}.tar.gz"
-    compress_dir(filename, dir)
+    compress_dir(filename, @dir)
 
     # new full upload endpoint
-    uri = URI.parse(site + "/admin/themes/import.json?api_key=#{@api_key}")
+    uri = URI.parse(@site + "/admin/themes/import.json?api_key=#{@api_key}")
     http = Net::HTTP.new(uri.host, uri.port)
     File.open(filename) do |tgz|
 
