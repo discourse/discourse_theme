@@ -3,10 +3,10 @@ class DiscourseTheme::Cli
   WATCHER_SETTINGS_FILE = File.expand_path("~/.discourse-theme-watcher")
 
   def usage
-    puts "Usage: discourse-theme COMMAND"
+    puts "Usage: discourse_theme COMMAND"
     puts
-    puts "discourse-theme new DIR : Creates a new theme in the designated directory"
-    puts "discourse-theme watch DIR : Watches the theme directory and synchronizes with Discourse"
+    puts "discourse_theme new DIR : Creates a new theme in the designated directory"
+    puts "discourse_theme watch DIR : Watches the theme directory and synchronizes with Discourse"
     exit 1
   end
 
