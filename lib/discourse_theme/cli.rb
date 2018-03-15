@@ -34,6 +34,15 @@ class DiscourseTheme::Cli
     api_key
   end
 
+  def is_https_redirect?(url)
+    url = URI.parse(url)
+    path = url.path
+    path = "/" if path.empty?
+    req = Net::HTTP::Get.new("/")
+    response = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
+    Net::HTTPRedirection === response && response['location'] =~ /^https/i
+  end
+
   def guess_url(settings)
     url = ENV['DISCOURSE_URL']
     if url
@@ -48,7 +57,15 @@ class DiscourseTheme::Cli
     if !url
       puts "No site found! Where would you like to synchronize the theme to: "
       url = STDIN.gets.strip
-      url += "http://" unless url =~ /^https?:\/\//
+      url = "http://#{url}" unless url =~ /^https?:\/\//
+
+      # maybe this is an HTTPS redirect
+      uri = URI.parse(url)
+      if URI::HTTP === uri && uri.port == 80 && is_https_redirect?(url)
+        puts "Detected an #{url} is an HTTPS domain"
+        url = url.sub("http", "https")
+      end
+
       puts "Would you like me to store this site name at: #{SETTINGS_FILE}? (Yes|No)"
       answer = STDIN.gets.strip
       if answer =~ /y(es)?/i
