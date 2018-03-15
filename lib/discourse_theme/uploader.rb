@@ -40,7 +40,6 @@ class DiscourseTheme::Uploader
     count
   end
 
-
   def upload_theme_field(target: , name: , type_id: , value:)
 
     raise "expecting theme_id to be set!" unless @theme_id
@@ -59,6 +58,8 @@ class DiscourseTheme::Uploader
     uri = URI.parse(@site + "/admin/themes/#{@theme_id}?api_key=#{@api_key}")
 
     http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = URI::HTTPS === uri
+
     request = Net::HTTP::Put.new(uri.request_uri, 'Content-Type' => 'application/json')
     request.body = args.to_json
 
@@ -82,6 +83,7 @@ class DiscourseTheme::Uploader
     # new full upload endpoint
     uri = URI.parse(@site + "/admin/themes/import.json?api_key=#{@api_key}")
     http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = URI::HTTPS === uri
     File.open(filename) do |tgz|
 
       request = Net::HTTP::Post::Multipart.new(
@@ -97,12 +99,12 @@ class DiscourseTheme::Uploader
         end
       else
         puts "Error importing theme status: #{response.code}"
+
+        puts response.body
       end
     end
 
   ensure
     FileUtils.rm_f filename
   end
-
-
 end
