@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "minitar", "~> 0.6"
   spec.add_dependency "listen", "~> 3.1"
   spec.add_dependency "multipart-post", "~> 2.0"
+  spec.add_dependency "wdm", ">= 0.1.0" if Gem.win_platform?
 
   spec.required_ruby_version = '>= 2.2.0'
 end
