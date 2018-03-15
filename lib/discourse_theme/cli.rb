@@ -1,6 +1,6 @@
 class DiscourseTheme::Cli
 
-  WATCHER_SETTINGS_FILE = File.expand_path("~/.discourse-theme-watcher")
+  SETTINGS_FILE = File.expand_path("~/.discourse_theme")
 
   def usage
     puts "Usage: discourse_theme COMMAND"
@@ -10,62 +10,53 @@ class DiscourseTheme::Cli
     exit 1
   end
 
-  def guess_api_key
+  def guess_api_key(settings)
     api_key = ENV['DISCOURSE_API_KEY']
     if api_key
       puts "Using api_key provided by DISCOURSE_API_KEY"
     end
 
-    if !api_key && File.exist?(WATCHER_SETTINGS_FILE)
-      api_key = File.read(WATCHER_SETTINGS_FILE).strip
-      puts "Using previously stored api key in #{WATCHER_SETTINGS_FILE}"
+    if !api_key && settings.api_key
+      api_key = settings.api_key
+      puts "Using previously stored api key in #{SETTINGS_FILE}"
     end
 
     if !api_key
       puts "No API key found in DISCOURSE_API_KEY env var enter your API key: "
       api_key = STDIN.gets.strip
-      puts "Would you like me to store this API key in #{WATCHER_SETTINGS_FILE}? (Yes|No)"
+      puts "Would you like me to store this API key in #{SETTINGS_FILE}? (Yes|No)"
       answer = STDIN.gets.strip
       if answer =~ /y(es)?/i
-        File.write WATCHER_SETTINGS_FILE, api_key
+        settings.api_key = api_key
       end
     end
 
     api_key
   end
 
-  def guess_site(dir)
-    site = ENV['DISCOURSE_SITE']
-    if site
-      puts "Site provided by DISCOURSE_SITE"
+  def guess_url(settings)
+    url = ENV['DISCOURSE_URL']
+    if url
+      puts "Site provided by DISCOURSE_URL"
     end
 
-    site_conf = dir + "/.discourse-site"
-
-    if !site && File.exist?(site_conf)
-      site = File.read(site_conf).strip
-      puts "Using #{site} defined in #{site_conf}"
+    if !url && settings.url
+      url = settings.url
+      puts "Using #{url} defined in #{SETTINGS_FILE}"
     end
 
-    if !site
-      puts "No site found, where would you like to synchronize the theme to: "
-      site = STDIN.gets.strip
-      puts "Would you like me to store this site name at: #{site_conf}? (Yes|No)"
+    if !url
+      puts "No site found! Where would you like to synchronize the theme to: "
+      url = STDIN.gets.strip
+      url += "http://" unless url =~ /^https?:\/\//
+      puts "Would you like me to store this site name at: #{SETTINGS_FILE}? (Yes|No)"
       answer = STDIN.gets.strip
       if answer =~ /y(es)?/i
-        File.write site_conf, site
-        # got to make sure this is in .gitignore
-
-        gitignore = File.read(dir + "/.gitignore") rescue ""
-        if gitignore !~ /^.discourse-site/
-          gitignore.strip!
-          gitignore += "\n.discourse-site"
-          File.write(dir + '/.gitignore', gitignore)
-        end
+        settings.url = url
       end
     end
 
-    site
+    url
   end
 
   def run
@@ -85,11 +76,14 @@ class DiscourseTheme::Cli
         usage
       end
 
-      api_key = guess_api_key
-      site = guess_site(dir)
+      config = DiscourseTheme::Config.new(SETTINGS_FILE)
+      settings = config[dir]
 
-      if !site
-        puts "Missing site!"
+      url = guess_url(settings)
+      api_key = guess_api_key(settings)
+
+      if !url
+        puts "Missing site to synchronize with!"
         usage
       end
 
@@ -98,8 +92,8 @@ class DiscourseTheme::Cli
         usage
       end
 
-      uploader = DiscourseTheme::Uploader.new(dir: dir, api_key: api_key, site: site)
-      print "Uploading theme from #{dir} to #{site} : "
+      uploader = DiscourseTheme::Uploader.new(dir: dir, api_key: api_key, site: url)
+      print "Uploading theme from #{dir} to #{url} : "
       uploader.upload_full_theme
 
       watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
