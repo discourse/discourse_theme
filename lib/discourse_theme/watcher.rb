@@ -40,7 +40,7 @@ class DiscourseTheme::Watcher
     target, file = name.split("/")
 
     if ["common", "desktop", "mobile"].include?(target)
-      if file = "#{target}.scss"
+      if file == "#{target}.scss"
         # a CSS file
         return [target, "scss", 1]
       end
@@ -48,6 +48,4 @@ class DiscourseTheme::Watcher
 
     nil
   end
-
-
 end
