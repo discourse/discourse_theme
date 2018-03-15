@@ -11,7 +11,6 @@ require 'uri'
 require 'listen'
 require 'json'
 require 'yaml'
-require 'wdm' if Gem.win_platform?
 
 require 'discourse_theme/version'
 require 'discourse_theme/config'
