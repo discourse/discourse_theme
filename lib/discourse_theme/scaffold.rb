@@ -22,6 +22,8 @@ class DiscourseTheme::Scaffold
     mobile/footer.html
     mobile/head_tag.html
     mobile/body_tag.html
+
+    settings.yml
   }
 
   ABOUT_JSON = <<~STR
