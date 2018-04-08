@@ -1,9 +1,12 @@
 class DiscourseTheme::Uploader
 
+  THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
+
   def initialize(dir:, api_key:, site:)
     @dir = dir
     @api_key = api_key
     @site = site
+    @is_theme_creator = !!(THEME_CREATOR_REGEX =~ site)
     @theme_id = nil
   end
 
@@ -55,14 +58,20 @@ class DiscourseTheme::Uploader
       }
     }
 
-    uri = URI.parse(@site + "/admin/themes/#{@theme_id}?api_key=#{@api_key}")
+    endpoint = 
+      if @is_theme_creator
+        "/user_themes/#{@theme_id}"
+      else
+        "/admin/themes/#{@theme_id}?api_key=#{@api_key}"
+      end
 
+    uri = URI.parse(@site + endpoint)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = URI::HTTPS === uri
 
     request = Net::HTTP::Put.new(uri.request_uri, 'Content-Type' => 'application/json')
     request.body = args.to_json
-
+    add_headers(request)
     http.start do |h|
       response = h.request(request)
       if response.code.to_i == 200
@@ -80,8 +89,14 @@ class DiscourseTheme::Uploader
     filename = "#{Pathname.new(Dir.tmpdir).realpath}/bundle_#{SecureRandom.hex}.tar.gz"
     compress_dir(filename, @dir)
 
-    # new full upload endpoint
-    uri = URI.parse(@site + "/admin/themes/import.json?api_key=#{@api_key}")
+    endpoint = 
+      if @is_theme_creator
+        "/user_themes/import.json"
+      else
+        "/admin/themes/import.json?api_key=#{@api_key}"
+      end
+
+    uri = URI.parse(@site + endpoint)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = URI::HTTPS === uri
     File.open(filename) do |tgz|
@@ -90,6 +105,7 @@ class DiscourseTheme::Uploader
         uri.request_uri,
         "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz"),
       )
+      add_headers(request)
       response = http.request(request)
       if response.code.to_i == 201
         json = JSON.parse(response.body)
@@ -107,4 +123,12 @@ class DiscourseTheme::Uploader
   ensure
     FileUtils.rm_f filename
   end
+
+  private
+
+    def add_headers(request)
+      if @is_theme_creator
+        request["User-Api-Key"] = @api_key
+      end
+    end
 end
