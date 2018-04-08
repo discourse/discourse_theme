@@ -1,6 +1,6 @@
 class DiscourseTheme::Uploader
 
-  THEME_CREATOR_REGEX = /^https:\/\/sandbox.dtaylor.uk$/i
+  THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
 
   def initialize(dir:, api_key:, site:)
     @dir = dir
