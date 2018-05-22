@@ -16,6 +16,7 @@ class DiscourseTheme::Uploader
 
     Dir.chdir(dir + "/../") do
       Find.find(File.basename(dir)) do |x|
+        Find.prune if File.basename(x) == "src"
         Find.prune if File.basename(x)[0] == ?.
         next if File.directory?(x)
 
@@ -58,7 +59,7 @@ class DiscourseTheme::Uploader
       }
     }
 
-    endpoint = 
+    endpoint =
       if @is_theme_creator
         "/user_themes/#{@theme_id}"
       else
@@ -89,7 +90,7 @@ class DiscourseTheme::Uploader
     filename = "#{Pathname.new(Dir.tmpdir).realpath}/bundle_#{SecureRandom.hex}.tar.gz"
     compress_dir(filename, @dir)
 
-    endpoint = 
+    endpoint =
       if @is_theme_creator
         "/user_themes/import.json"
       else
