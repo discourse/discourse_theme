@@ -108,12 +108,16 @@ class DiscourseTheme::Uploader
       )
       add_headers(request)
       response = http.request(request)
-      if response.code.to_i == 201
+
+      case response.code.to_i
+      when 201
         json = JSON.parse(response.body)
         @theme_id = json["theme"]["id"]
         if diagnose_errors(json) == 0
           puts "(done)"
         end
+      when 404
+        puts "Error: Incorrect site URL or API key doesn't have admin access. Please update the correct values in file `#{DiscourseTheme::Cli::SETTINGS_FILE}`."
       else
         puts "Error importing theme status: #{response.code}"
 
