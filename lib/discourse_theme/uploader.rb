@@ -131,9 +131,9 @@ class DiscourseTheme::Uploader
 
   private
 
-    def add_headers(request)
-      if @is_theme_creator
-        request["User-Api-Key"] = @api_key
-      end
+  def add_headers(request)
+    if @is_theme_creator
+      request["User-Api-Key"] = @api_key
     end
+  end
 end
