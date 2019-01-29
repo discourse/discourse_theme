@@ -22,6 +22,14 @@ class DiscourseTheme::Config
       set("url", val)
     end
 
+    def theme_id
+      safe_config["theme_id"].to_i
+    end
+
+    def theme_id=(theme_id)
+      set("theme_id", theme_id.to_i)
+    end
+
     protected
 
     def set(name, val)
@@ -57,13 +65,6 @@ class DiscourseTheme::Config
     else
       @raw_config = {}
     end
-  end
-
-  def set(path, url:, api_key:)
-    @raw_config[path] = {
-      "url" => url,
-      "api_key" => api_key
-    }
   end
 
   def save

@@ -1,123 +1,148 @@
-class DiscourseTheme::Cli
+module DiscourseTheme
+  class Cli
 
-  SETTINGS_FILE = File.expand_path("~/.discourse_theme")
+    @@prompt = ::TTY::Prompt.new(help_color: :cyan)
+    @@pastel = Pastel.new
 
-  def usage
-    puts "Usage: discourse_theme COMMAND"
-    puts
-    puts "discourse_theme new DIR : Creates a new theme in the designated directory"
-    puts "discourse_theme watch DIR : Watches the theme directory and synchronizes with Discourse"
-    exit 1
-  end
-
-  def guess_api_key(settings)
-    api_key = ENV['DISCOURSE_API_KEY']
-    if api_key
-      puts "Using api_key provided by DISCOURSE_API_KEY"
+    def self.yes?(message)
+      @@prompt.yes?(@@pastel.cyan("? ") + message)
     end
 
-    if !api_key && settings.api_key
-      api_key = settings.api_key
-      puts "Using previously stored api key in #{SETTINGS_FILE}"
+    def self.ask(message)
+      @@prompt.ask(@@pastel.cyan("? ") + message)
     end
 
-    if !api_key
-      puts "No API key found in DISCOURSE_API_KEY env var enter your API key: "
-      api_key = STDIN.gets.strip
-      puts "Would you like me to store this API key in #{SETTINGS_FILE}? (Yes|No)"
-      answer = STDIN.gets.strip
-      if answer =~ /y(es)?/i
-        settings.api_key = api_key
-      end
+    def self.select(message, options)
+      @@prompt.select(@@pastel.cyan("? ") + message, options)
     end
 
-    api_key
-  end
-
-  def is_https_redirect?(url)
-    url = URI.parse(url)
-    path = url.path
-    path = "/" if path.empty?
-    req = Net::HTTP::Get.new("/")
-    response = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
-    Net::HTTPRedirection === response && response['location'] =~ /^https/i
-  end
-
-  def guess_url(settings)
-    url = ENV['DISCOURSE_URL']
-    if url
-      puts "Site provided by DISCOURSE_URL"
+    def self.info(message)
+      puts @@pastel.blue("i ") + message
     end
 
-    if !url && settings.url
-      url = settings.url
-      puts "Using #{url} defined in #{SETTINGS_FILE}"
+    def self.progress(message)
+      puts @@pastel.yellow("» ") + message
     end
 
-    if !url
-      puts "No site found! Where would you like to synchronize the theme to: "
-      url = STDIN.gets.strip
-      url = "http://#{url}" unless url =~ /^https?:\/\//
-
-      # maybe this is an HTTPS redirect
-      uri = URI.parse(url)
-      if URI::HTTP === uri && uri.port == 80 && is_https_redirect?(url)
-        puts "Detected an #{url} is an HTTPS domain"
-        url = url.sub("http", "https")
-      end
-
-      puts "Would you like me to store this site name at: #{SETTINGS_FILE}? (Yes|No)"
-      answer = STDIN.gets.strip
-      if answer =~ /y(es)?/i
-        settings.url = url
-      end
+    def self.error(message)
+      puts @@pastel.red("✘ #{message}")
     end
 
-    url
-  end
+    def self.success(message)
+      puts @@pastel.green("✔ #{message}")
+    end
 
-  def run
-    usage unless ARGV[1]
+    SETTINGS_FILE = File.expand_path("~/.discourse_theme")
 
-    command = ARGV[0].to_s.downcase
-    dir = File.expand_path(ARGV[1])
+    def usage
+      puts "Usage: discourse_theme COMMAND"
+      puts
+      puts "discourse_theme new DIR : Creates a new theme in the designated directory"
+      puts "discourse_theme download DIR : Download a theme from the server, and store in the designated directory"
+      puts "discourse_theme watch DIR : Watches the theme directory and synchronizes with Discourse"
+      puts "discourse_theme reset DIR : Remove stored preferences for the specified directory (directory content is unchanged)"
+      exit 1
+    end
 
-    dir_exists = File.exist?(dir)
+    def run(args)
+      usage unless args[1]
 
-    if command == "new" && !dir_exists
-      DiscourseTheme::Scaffold.generate(dir)
-    elsif command == "watch" && dir_exists
-      if !File.exist?("#{dir}/about.json")
-        puts "No about.json file found in #{dir}!"
-        puts
-        usage
-      end
+      command = args[0].to_s.downcase
+      dir = File.expand_path(args[1])
 
       config = DiscourseTheme::Config.new(SETTINGS_FILE)
       settings = config[dir]
 
-      url = guess_url(settings)
-      api_key = guess_api_key(settings)
+      theme_id = settings.theme_id
 
-      if !url
-        puts "Missing site to synchronize with!"
+      if command == "new"
+        raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
+        DiscourseTheme::Scaffold.generate(dir)
+        if Cli.yes?("Would you like to start 'watching' this theme?")
+          args[0] = "watch"
+          Cli.progress "Running discourse_theme #{args.join(' ')}"
+          run(args)
+        end
+      elsif command == "reset"
+        settings.url = settings.api_key = settings.theme_id = nil
+        Cli.success "Settings reset for #{dir}"
+      elsif command == "watch"
+        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
+        client = DiscourseTheme::Client.new(dir, settings)
+
+        theme_list = client.get_themes_list
+
+        options = {}
+        if theme_id && theme = theme_list.find { |t| t["id"] == theme_id }
+          options["Sync with existing theme: '#{theme["name"]}' (id:#{theme_id})"] = :default
+        end
+        options["Create and sync with a new theme"] = :create
+        options["Select a different theme"] = :select
+
+        choice = Cli.select('How would you like to sync this theme?', options.keys)
+
+        if options[choice] == :create
+          theme_id = nil
+        elsif options[choice] == :select
+          themes = render_theme_list(theme_list)
+          choice = Cli.select('Which theme would you like to sync with?', themes)
+          theme_id = extract_theme_id(choice)
+        end
+
+        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id)
+
+        Cli.progress "Uploading theme from #{dir}"
+        settings.theme_id = theme_id = uploader.upload_full_theme
+
+        Cli.success "Theme uploaded (id:#{theme_id})"
+        watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
+
+        Cli.progress "Watching for changes in #{dir}..."
+        watcher.watch
+
+      elsif command == "download"
+        client = DiscourseTheme::Client.new(dir, settings)
+        downloader = DiscourseTheme::Downloader.new(dir: dir, client: client)
+
+        FileUtils.mkdir_p dir unless Dir.exists?(dir)
+        raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" unless Dir.empty?(dir)
+
+        Cli.progress "Loading theme list..."
+        themes = render_theme_list(client.get_themes_list)
+
+        choice = Cli.select('Which theme would you like to download?', themes)
+        theme_id = extract_theme_id(choice)
+
+        Cli.progress "Downloading theme into #{dir}"
+
+        downloader.download_theme(theme_id)
+        settings.theme_id = theme_id
+
+        Cli.success "Theme downloaded"
+
+        if Cli.yes?("Would you like to start 'watching' this theme?")
+          args[0] = "watch"
+          Cli.progress "Running discourse_theme #{args.join(' ')}"
+          run(args)
+        end
+      else
         usage
       end
 
-      if !api_key
-        puts "Missing api key!"
-        usage
-      end
+      Cli.progress "Exiting..."
+    rescue DiscourseTheme::ThemeError => e
+      Cli.error "#{e.message}"
+    rescue Interrupt, TTY::Reader::InputInterrupt => e
+      Cli.error "Interrupted"
+    end
 
-      uploader = DiscourseTheme::Uploader.new(dir: dir, api_key: api_key, site: url)
-      print "Uploading theme from #{dir} to #{url} : "
-      uploader.upload_full_theme
+    def render_theme_list(themes)
+      themes.sort_by { |t| t["updated_at"] }
+        .reverse.map { |theme| "#{theme["name"]} (id:#{theme["id"]})" }
+    end
 
-      watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
-
-      watcher.watch
-    else
-      usage
+    def extract_theme_id(rendered_name)
+      /\(id:([0-9]+)\)$/.match(rendered_name)[1].to_i
     end
   end
 end
