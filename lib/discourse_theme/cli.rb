@@ -8,8 +8,8 @@ module DiscourseTheme
       @@prompt.yes?(@@pastel.cyan("? ") + message)
     end
 
-    def self.ask(message)
-      @@prompt.ask(@@pastel.cyan("? ") + message)
+    def self.ask(message, default: nil)
+      @@prompt.ask(@@pastel.cyan("? ") + message, default: default)
     end
 
     def self.select(message, options)
@@ -35,17 +35,20 @@ module DiscourseTheme
     SETTINGS_FILE = File.expand_path("~/.discourse_theme")
 
     def usage
-      puts "Usage: discourse_theme COMMAND"
+      puts "Usage: discourse_theme COMMAND [--reset]"
       puts
       puts "discourse_theme new DIR : Creates a new theme in the designated directory"
       puts "discourse_theme download DIR : Download a theme from the server, and store in the designated directory"
       puts "discourse_theme watch DIR : Watches the theme directory and synchronizes with Discourse"
-      puts "discourse_theme reset DIR : Remove stored preferences for the specified directory (directory content is unchanged)"
+      puts
+      puts "Use --reset to change the configuration for a directory"
       exit 1
     end
 
     def run(args)
       usage unless args[1]
+
+      reset = !!args.delete("--reset")
 
       command = args[0].to_s.downcase
       dir = File.expand_path(args[1])
@@ -63,12 +66,9 @@ module DiscourseTheme
           Cli.progress "Running discourse_theme #{args.join(' ')}"
           run(args)
         end
-      elsif command == "reset"
-        settings.url = settings.api_key = settings.theme_id = nil
-        Cli.success "Settings reset for #{dir}"
       elsif command == "watch"
         raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
-        client = DiscourseTheme::Client.new(dir, settings)
+        client = DiscourseTheme::Client.new(dir, settings, reset: reset)
 
         theme_list = client.get_themes_list
 
@@ -101,7 +101,7 @@ module DiscourseTheme
         watcher.watch
 
       elsif command == "download"
-        client = DiscourseTheme::Client.new(dir, settings)
+        client = DiscourseTheme::Client.new(dir, settings, reset: reset)
         downloader = DiscourseTheme::Downloader.new(dir: dir, client: client)
 
         FileUtils.mkdir_p dir unless Dir.exists?(dir)

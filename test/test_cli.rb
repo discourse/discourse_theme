@@ -92,18 +92,6 @@ class TestCli < Minitest::Test
     end
   end
 
-  def test_reset
-    settings.api_key = "mykey"
-    assert(settings.api_key == "mykey")
-    args = ["reset", @dir]
-
-    suppress_output do
-      DiscourseTheme::Cli.new.run(args)
-    end
-
-    assert(settings.api_key == nil)
-  end
-
   def test_new
     args = ["new", @dir]
 

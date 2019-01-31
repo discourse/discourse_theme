@@ -2,7 +2,8 @@ module DiscourseTheme
   class Client
     THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
 
-    def initialize(dir, settings)
+    def initialize(dir, settings, reset:)
+      @reset = reset
       @url = guess_url(settings)
       @api_key = guess_api_key(settings)
 
@@ -125,8 +126,8 @@ module DiscourseTheme
         Cli.progress "Using #{url} from #{DiscourseTheme::Cli::SETTINGS_FILE}"
       end
 
-      if !url
-        url = Cli.ask("No site registered for this directory! What is the root URL of your Discourse site?").strip
+      if !url || @reset
+        url = Cli.ask("What is the root URL of your Discourse site?", default: url).strip
         url = "http://#{url}" unless url =~ /^https?:\/\//
 
         # maybe this is an HTTPS redirect
@@ -138,6 +139,8 @@ module DiscourseTheme
 
         if Cli.yes?("Would you like this site name stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
           settings.url = url
+        else
+          settings.url = nil
         end
       end
 
@@ -155,10 +158,12 @@ module DiscourseTheme
         Cli.progress "Using api key from #{DiscourseTheme::Cli::SETTINGS_FILE}"
       end
 
-      if !api_key
-        api_key = Cli.ask("No API key found for this directory! What is your API key?").strip
+      if !api_key || @reset
+        api_key = Cli.ask("What is your API key?", default: api_key).strip
         if Cli.yes?("Would you like this API key stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
           settings.api_key = api_key
+        else
+          settings.api_key = nil
         end
       end
 

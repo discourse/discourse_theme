@@ -7,11 +7,11 @@ class DiscourseTheme::Config
     end
 
     def api_key
-      safe_config["api_key"]
+      search_api_key(url) || safe_config["api_key"]
     end
 
     def api_key=(val)
-      set("api_key", val)
+      set_api_key(url, val)
     end
 
     def url
@@ -46,6 +46,18 @@ class DiscourseTheme::Config
       else
         {}
       end
+    end
+
+    def search_api_key(url)
+      hash = @config.raw_config["api_keys"]
+      hash[url] if hash
+    end
+
+    def set_api_key(url, api_key)
+      hash = @config.raw_config["api_keys"] ||= {}
+      hash[url] = api_key
+      @config.save
+      api_key
     end
   end
 
