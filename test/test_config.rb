@@ -72,8 +72,8 @@ class TestConfig < Minitest::Test
     filename = new_temp_filename
 
     config = DiscourseTheme::Config.new filename
-    config.set("/a/b/c", url: "http://a.com", api_key: "bla")
-    config.save
+    config["/a/b/c"].url = "http://a.com"
+    config["/a/b/c"].api_key = "bla"
 
     config = DiscourseTheme::Config.new filename
     settings = config["/a/b/c"]

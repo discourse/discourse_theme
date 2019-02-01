@@ -7,11 +7,11 @@ class DiscourseTheme::Config
     end
 
     def api_key
-      safe_config["api_key"]
+      search_api_key(url) || safe_config["api_key"]
     end
 
     def api_key=(val)
-      set("api_key", val)
+      set_api_key(url, val)
     end
 
     def url
@@ -20,6 +20,14 @@ class DiscourseTheme::Config
 
     def url=(val)
       set("url", val)
+    end
+
+    def theme_id
+      safe_config["theme_id"].to_i
+    end
+
+    def theme_id=(theme_id)
+      set("theme_id", theme_id.to_i)
     end
 
     protected
@@ -39,6 +47,18 @@ class DiscourseTheme::Config
         {}
       end
     end
+
+    def search_api_key(url)
+      hash = @config.raw_config["api_keys"]
+      hash[url] if hash
+    end
+
+    def set_api_key(url, api_key)
+      hash = @config.raw_config["api_keys"] ||= {}
+      hash[url] = api_key
+      @config.save
+      api_key
+    end
   end
 
   attr_reader :raw_config, :filename
@@ -57,13 +77,6 @@ class DiscourseTheme::Config
     else
       @raw_config = {}
     end
-  end
-
-  def set(path, url:, api_key:)
-    @raw_config[path] = {
-      "url" => url,
-      "api_key" => api_key
-    }
   end
 
   def save
