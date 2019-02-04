@@ -28,7 +28,8 @@ module DiscourseTheme
         end
 
       response = request(Net::HTTP::Get.new(endpoint), never_404: true)
-      JSON.parse(response.body)["themes"]
+      json = JSON.parse(response.body)
+      @is_theme_creator ? json["user_themes"] : json["themes"]
     end
 
     def get_raw_theme_export(id)
