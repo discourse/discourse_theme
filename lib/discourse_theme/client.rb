@@ -12,11 +12,31 @@ module DiscourseTheme
 
       @is_theme_creator = !!(THEME_CREATOR_REGEX =~ @url)
 
-      parts = discourse_version.split(".").map { |s| s.sub('beta', '').to_i }
-      if parts[0] < 2 || parts[1] < 2 || parts[2] < 0 || (!parts[3].nil? && parts[3] < 10)
-        Cli.info "discourse_theme is designed for Discourse 2.2.0.beta10 or above"
+      if !self.class.has_needed_version?(discourse_version, "2.3.0.beta1")
+        Cli.info "discourse_theme is designed for Discourse 2.3.0.beta1 or above"
         Cli.info "download will not function, and syncing destination will be unpredictable"
       end
+    end
+
+    # From https://github.com/discourse/discourse/blob/master/lib/version.rb
+    def self.has_needed_version?(current, needed)
+      current_split = current.split('.')
+      needed_split = needed.split('.')
+
+      (0..[current_split.size, needed_split.size].max).each do |idx|
+        current_str = current_split[idx] || ''
+
+        c0 = (needed_split[idx] || '').sub('beta', '').to_i
+        c1 = (current_str || '').sub('beta', '').to_i
+
+        # beta is less than stable
+        return false if current_str.include?('beta') && (c0 == 0) && (c1 > 0)
+
+        return true if c1 > c0
+        return false if c0 > c1
+      end
+
+      true
     end
 
     def get_themes_list
