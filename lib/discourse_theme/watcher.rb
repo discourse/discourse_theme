@@ -6,7 +6,27 @@ module DiscourseTheme
     end
 
     def watch
-      listener = Listen.to(@dir) do |modified, added, removed|
+      # Dir structure: https://meta.discourse.org/t/developer-s-guide-to-discourse-themes/93648#heading--2-c
+      # Regexr: https://regexr.com/4ba17
+      file_matcher = /
+        # Watch only recognized files
+        ^(?:
+          (?:
+            (common|desktop|mobile)\/
+            (?:
+              (?:header|after_header|footer|head_tag|body_tag)\.html?
+              |\1\.s?css
+            )
+          )
+          |common\/embedded\.s?css
+          |locales\/.+\.ya?ml
+          |settings\.ya?ml
+          |assets\/.+
+          |about\.json
+        )$
+      /x
+
+      listener = Listen.to(@dir, only: file_matcher) do |modified, added, removed|
         begin
           if modified.length == 1 &&
               added.length == 0 &&
