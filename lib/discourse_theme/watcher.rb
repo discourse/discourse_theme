@@ -27,7 +27,8 @@ module DiscourseTheme
             if count > 1
               Cli.progress "Detected changes in #{count} files, uploading theme"
             else
-              Cli.progress "Detected changes in #{modified[0].gsub(@dir, '')}, uploading theme"
+              filename = modified[0] || added[0] || removed[0]
+              Cli.progress "Detected changes in #{filename.gsub(@dir, '')}, uploading theme"
             end
             @uploader.upload_full_theme
           end
