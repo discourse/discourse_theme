@@ -15,8 +15,9 @@ class TestCli < Minitest::Test
     @import_stub = stub_request(:post, "http://my.forum.com/admin/themes/import.json?api_key=abc").
       to_return(status: 200, body: { theme: { id: "6", name: "Uploaded theme", theme_fields: [] } }.to_json)
 
-    @download_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
-      to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.tar.gz"))
+    @download_tar_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+      to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.tar.gz"),
+                headers: { "content-disposition" => 'attachment; filename="testfile.tar.gz"' })
 
     ENV["DISCOURSE_URL"] = "http://my.forum.com"
     ENV["DISCOURSE_API_KEY"] = "abc"
@@ -57,12 +58,16 @@ class TestCli < Minitest::Test
     assert_requested(@about_stub, times: 1)
     assert_requested(@themes_stub, times: 1)
     assert_requested(@import_stub, times: 1)
-    assert_requested(@download_stub, times: 0)
+    assert_requested(@download_tar_stub, times: 0)
 
     assert_equal(settings.theme_id, 6)
   end
 
   def test_download
+    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+      to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),
+                headers: { "content-disposition" => 'attachment; filename="testfile.zip"' })
+
     args = ["download", @dir]
 
     DiscourseTheme::Cli.stub(:select, ->(question, options) { options[0] }) do
@@ -76,7 +81,7 @@ class TestCli < Minitest::Test
     assert_requested(@about_stub, times: 1)
     assert_requested(@themes_stub, times: 1)
     assert_requested(@import_stub, times: 0)
-    assert_requested(@download_stub, times: 1)
+    assert_requested(@download_tar_stub, times: 1)
 
     # Check it got downloaded correctly
     Dir.chdir(@dir) do
@@ -90,6 +95,14 @@ class TestCli < Minitest::Test
       assert(File.read("mobile/mobile.scss") == "body {background-color: $background_color; font-size: $font-size}")
       assert(File.read("settings.yml") == "somesetting: test")
     end
+  end
+
+  def test_download_zip
+    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+      to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),
+                headers: { "content-disposition" => 'attachment; filename="testfile.zip"' })
+
+    test_download
   end
 
   def test_new
@@ -106,7 +119,7 @@ class TestCli < Minitest::Test
     assert_requested(@about_stub, times: 0)
     assert_requested(@themes_stub, times: 0)
     assert_requested(@import_stub, times: 0)
-    assert_requested(@download_stub, times: 0)
+    assert_requested(@download_tar_stub, times: 0)
 
     # Spot check a few files
     Dir.chdir(@dir) do

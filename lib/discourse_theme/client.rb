@@ -62,7 +62,8 @@ module DiscourseTheme
 
       response = request(Net::HTTP::Get.new endpoint)
       raise "Error downloading theme: #{response.code}" unless response.code.to_i == 200
-      response.body
+      raise "Error downloading theme: no content disposition" unless response["content-disposition"]
+      [response.body, response["content-disposition"].match(/filename=(\"?)(.+)\1/)[2]]
     end
 
     def update_theme(id, args)

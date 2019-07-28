@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "listen", "~> 3.1"
   spec.add_dependency "multipart-post", "~> 2.0"
   spec.add_dependency "tty-prompt", "~> 0.18"
+  spec.add_dependency "rubyzip", "~> 1.2"
 
   spec.required_ruby_version = '>= 2.2.0'
 end

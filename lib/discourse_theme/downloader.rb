@@ -1,3 +1,5 @@
+require 'zip'
+
 class DiscourseTheme::Downloader
 
   def initialize(dir:, client:)
@@ -7,17 +9,27 @@ class DiscourseTheme::Downloader
   end
 
   def download_theme(id)
-    raw = @client.get_raw_theme_export(id)
-    sio = StringIO.new(raw)
-    gz = Zlib::GzipReader.new(sio)
-    Minitar.unpack(gz, @dir)
+    raw, filename = @client.get_raw_theme_export(id)
 
-    # Minitar extracts into a sub directory, move all the files up one dir
-    Dir.chdir(@dir) do
-      folders = Dir.glob('*/')
-      raise "Extraction failed" unless folders.length == 1
-      FileUtils.mv(Dir.glob("#{folders[0]}*"), "./")
-      FileUtils.remove_dir(folders[0])
+    if filename.end_with?(".zip")
+      Zip::File.open_buffer(raw) do |zip_file|
+        zip_file.each do |entry|
+          new_path = File.join(@dir, entry.name)
+          entry.extract(new_path)
+        end
+      end
+    else
+      sio = StringIO.new(raw)
+      gz = Zlib::GzipReader.new(sio)
+      Minitar.unpack(gz, @dir)
+
+      # Minitar extracts into a sub directory, move all the files up one dir
+      Dir.chdir(@dir) do
+        folders = Dir.glob('*/')
+        raise "Extraction failed" unless folders.length == 1
+        FileUtils.mv(Dir.glob("#{folders[0]}*"), "./")
+        FileUtils.remove_dir(folders[0])
+      end
     end
   end
 
