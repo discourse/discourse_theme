@@ -44,7 +44,7 @@ module DiscourseTheme
         if @is_theme_creator
           "/user_themes.json"
         else
-          "/admin/customize/themes.json?api_key=#{@api_key}"
+          "/admin/customize/themes.json"
         end
 
       response = request(Net::HTTP::Get.new(endpoint), never_404: true)
@@ -57,7 +57,7 @@ module DiscourseTheme
         if @is_theme_creator
           "/user_themes/#{id}/export"
         else
-          "/admin/customize/themes/#{id}/export?api_key=#{@api_key}"
+          "/admin/customize/themes/#{id}/export"
         end
 
       response = request(Net::HTTP::Get.new endpoint)
@@ -71,7 +71,7 @@ module DiscourseTheme
         if @is_theme_creator
           "/user_themes/#{id}"
         else
-          "/admin/themes/#{id}?api_key=#{@api_key}"
+          "/admin/themes/#{id}"
         end
 
       put = Net::HTTP::Put.new(endpoint, 'Content-Type' => 'application/json')
@@ -84,7 +84,7 @@ module DiscourseTheme
         if @is_theme_creator
           "/user_themes/import.json"
         else
-          "/admin/themes/import.json?api_key=#{@api_key}"
+          "/admin/themes/import.json"
         end
 
       post = Net::HTTP::Post::Multipart.new(
@@ -96,13 +96,7 @@ module DiscourseTheme
     end
 
     def discourse_version
-      endpoint = root +
-        if @is_theme_creator
-          "/about.json"
-        else
-          "/about.json?api_key=#{@api_key}"
-        end
-
+      endpoint = "#{root}/about.json"
       response = request(Net::HTTP::Get.new(endpoint), never_404: true)
       json = JSON.parse(response.body)
       json["about"]["version"]
@@ -134,6 +128,8 @@ module DiscourseTheme
     def add_headers(request)
       if @is_theme_creator
         request["User-Api-Key"] = @api_key
+      else
+        request["Api-Key"] = @api_key
       end
     end
 

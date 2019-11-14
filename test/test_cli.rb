@@ -6,16 +6,16 @@ class TestCli < Minitest::Test
     WebMock.reset!
     @dir = Dir.mktmpdir
 
-    @about_stub = stub_request(:get, "http://my.forum.com/about.json?api_key=abc").
+    @about_stub = stub_request(:get, "http://my.forum.com/about.json").
       to_return(status: 200, body: { about: { version: "2.2.0" } }.to_json)
 
-    @themes_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes.json?api_key=abc").
+    @themes_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes.json").
       to_return(status: 200, body: { themes: [{ id: 1, name: "Magic theme" }, { id: 5, name: "Amazing theme" }] }.to_json)
 
-    @import_stub = stub_request(:post, "http://my.forum.com/admin/themes/import.json?api_key=abc").
+    @import_stub = stub_request(:post, "http://my.forum.com/admin/themes/import.json").
       to_return(status: 200, body: { theme: { id: "6", name: "Uploaded theme", theme_fields: [] } }.to_json)
 
-    @download_tar_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+    @download_tar_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export").
       to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.tar.gz"),
                 headers: { "content-disposition" => 'attachment; filename="testfile.tar.gz"' })
 
@@ -64,7 +64,7 @@ class TestCli < Minitest::Test
   end
 
   def test_download
-    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export").
       to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),
                 headers: { "content-disposition" => 'attachment; filename="testfile.zip"' })
 
@@ -98,7 +98,7 @@ class TestCli < Minitest::Test
   end
 
   def test_download_zip
-    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export?api_key=abc").
+    @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export").
       to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),
                 headers: { "content-disposition" => 'attachment; filename="testfile.zip"' })
 
