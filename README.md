@@ -1,6 +1,6 @@
 # Discourse Theme
 
-This CLI contains helpers for creating [Discourse themes](https://meta.discourse.org/c/theme).
+This CLI contains helpers for creating [Discourse themes](https://meta.discourse.org/c/theme) and theme components.
 
 ## Installation
 
@@ -10,7 +10,7 @@ To install the CLI use:
 
 ## Why this gem exists?
 
-This gem allows you to use your editor of choice when developing Discourse themes. As you save files the CLI will update the remote theme and changes to it will appear live!
+This gem allows you to use your editor of choice when developing Discourse themes and theme components. As you save files the CLI will update the remote theme or component and changes to it will appear live!
 
 ## Usage
 
@@ -24,7 +24,7 @@ it contains two helpers:
 
 You can use `discourse_theme new PATH` to crate a new blank theme, the CLI will guide you through the process.
 
-You can use `discourse_theme watch PATH` to monitor your theme for changes, when changed the program will synchronize the theme to your Discourse of choice.
+You can use `discourse_theme watch PATH` to monitor your theme or component for changes, when changed the program will synchronize the theme or component to your Discourse of choice.
 
 ## Contributing
 
