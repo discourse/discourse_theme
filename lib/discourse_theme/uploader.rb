@@ -3,10 +3,11 @@ module DiscourseTheme
 
     THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
 
-    def initialize(dir:, client:, theme_id: nil)
+    def initialize(dir:, client:, theme_id: nil, components: nil)
       @dir = dir
       @client = client
       @theme_id = theme_id
+      @components = components
     end
 
     def compress_dir(gzip, dir)
@@ -66,7 +67,7 @@ module DiscourseTheme
       compress_dir(filename, @dir)
 
       File.open(filename) do |tgz|
-        response = @client.upload_full_theme(tgz, theme_id: @theme_id)
+        response = @client.upload_full_theme(tgz, theme_id: @theme_id, components: @components)
 
         json = JSON.parse(response.body)
         @theme_id = json["theme"]["id"]

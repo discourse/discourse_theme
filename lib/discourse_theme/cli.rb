@@ -57,6 +57,7 @@ module DiscourseTheme
       settings = config[dir]
 
       theme_id = settings.theme_id
+      components = settings.components
 
       if command == "new"
         raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
@@ -87,9 +88,20 @@ module DiscourseTheme
           themes = render_theme_list(theme_list)
           choice = Cli.select('Which theme would you like to sync with?', themes)
           theme_id = extract_theme_id(choice)
+          theme = theme_list.find { |t| t["id"] == theme_id }
         end
 
-        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id)
+        if !theme || theme["component"] == false
+          options = {}
+          options["Add missing but leave all extra components as is"] = :add
+          options["Add missing and remove superfluous"] = :sync
+          options["Do nothing"] = :none
+          options = options.sort_by { |_, b| b == components.to_sym ? 0 : 1 }.to_h if components
+          choice = Cli.select('How would you like to update child theme components?', options.keys)
+          settings.components = components = options[choice].to_s
+        end
+
+        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id, components: components)
 
         Cli.progress "Uploading theme from #{dir}"
         settings.theme_id = theme_id = uploader.upload_full_theme

@@ -30,6 +30,14 @@ class DiscourseTheme::Config
       set("theme_id", theme_id.to_i)
     end
 
+    def components
+      safe_config["components"]
+    end
+
+    def components=(val)
+      set("components", val)
+    end
+
     protected
 
     def set(name, val)

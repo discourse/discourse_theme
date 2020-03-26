@@ -79,7 +79,7 @@ module DiscourseTheme
       request(put)
     end
 
-    def upload_full_theme(tgz, theme_id:)
+    def upload_full_theme(tgz, theme_id:, components:)
       endpoint = root +
         if @is_theme_creator
           "/user_themes/import.json"
@@ -90,6 +90,7 @@ module DiscourseTheme
       post = Net::HTTP::Post::Multipart.new(
         endpoint,
         "theme_id" => theme_id,
+        "components" => components,
         "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz")
       )
       request(post)
