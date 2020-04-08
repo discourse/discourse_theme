@@ -93,11 +93,10 @@ module DiscourseTheme
 
         if !theme || theme["component"] == false
           options = {}
-          options["Add missing but leave all extra components as is"] = :add
-          options["Add missing and remove superfluous"] = :sync
-          options["Do nothing"] = :none
+          options["Yes"] = :sync
+          options["No"] = :none
           options = options.sort_by { |_, b| b == components.to_sym ? 0 : 1 }.to_h if components
-          choice = Cli.select('How would you like to update child theme components?', options.keys)
+          choice = Cli.select('Would you like to update child theme components?', options.keys)
           settings.components = components = options[choice].to_s
         end
 
