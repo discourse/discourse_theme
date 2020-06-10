@@ -1,5 +1,13 @@
 module DiscourseTheme
   class Watcher
+    def self.return_immediately!
+      @return_immediately = true
+    end
+
+    def self.return_immediately?
+      !!@return_immediately
+    end
+
     def initialize(dir:, uploader:)
       @dir = dir
       @uploader = uploader
@@ -40,7 +48,7 @@ module DiscourseTheme
       end
 
       listener.start
-      sleep
+      sleep unless self.class.return_immediately?
     end
 
     protected

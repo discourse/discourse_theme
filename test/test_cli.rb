@@ -22,7 +22,7 @@ class TestCli < Minitest::Test
     ENV["DISCOURSE_URL"] = "http://my.forum.com"
     ENV["DISCOURSE_API_KEY"] = "abc"
 
-    DiscourseTheme::Watcher.send(:define_method, :sleep) { true }
+    DiscourseTheme::Watcher.return_immediately!
   end
 
   DiscourseTheme::Cli::SETTINGS_FILE = Tempfile.new('settings')
