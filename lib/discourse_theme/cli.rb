@@ -111,6 +111,12 @@ module DiscourseTheme
         settings.theme_id = theme_id = uploader.upload_full_theme
 
         Cli.success "Theme uploaded (id:#{theme_id})"
+        Cli.info "Preview: #{client.root}/?preview_theme_id=#{theme_id}"
+        if client.is_theme_creator
+          Cli.info "Manage: #{client.root}/my/themes"
+        else
+          Cli.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
+        end
         watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
 
         Cli.progress "Watching for changes in #{dir}..."

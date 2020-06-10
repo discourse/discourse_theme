@@ -103,11 +103,15 @@ module DiscourseTheme
       json["about"]["version"]
     end
 
-    private
-
     def root
       @url
     end
+
+    def is_theme_creator
+      @is_theme_creator
+    end
+
+    private
 
     def request(request, never_404: false)
       uri = URI.parse(@url)
