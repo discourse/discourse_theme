@@ -63,6 +63,29 @@ class TestCli < Minitest::Test
     assert_equal(settings.theme_id, 6)
   end
 
+  def test_child_theme_prompt
+    args = ["watch", @dir]
+
+    questions_asked = []
+    DiscourseTheme::Cli.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
+      suppress_output do
+        DiscourseTheme::Cli.new.run(args)
+      end
+    end
+    assert(!questions_asked.join("\n").include?("child theme components"))
+
+
+    File.write(File.join(@dir, 'about.json'), {components: ["https://github.com/myorg/myrepo"]}.to_json)
+
+    questions_asked = []
+    DiscourseTheme::Cli.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
+      suppress_output do
+        DiscourseTheme::Cli.new.run(args)
+      end
+    end
+    assert(questions_asked.join("\n").include?("child theme components"))
+  end
+
   def test_download
     @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export").
       to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),

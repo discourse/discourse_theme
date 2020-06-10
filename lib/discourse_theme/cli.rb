@@ -91,7 +91,12 @@ module DiscourseTheme
           theme = theme_list.find { |t| t["id"] == theme_id }
         end
 
-        if !theme || theme["component"] == false
+        about_json = JSON.parse(File.read(File.join(dir, 'about.json'))) rescue nil
+        already_uploaded = !!theme
+        is_component = theme&.[]("component")
+        component_count = about_json&.[]("components")&.length || 0
+
+        if !already_uploaded && !is_component && component_count > 0
           options = {}
           options["Yes"] = :sync
           options["No"] = :none
