@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module DiscourseTheme
   class Watcher
     def self.return_immediately!

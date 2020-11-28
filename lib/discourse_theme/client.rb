@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module DiscourseTheme
   class Client
     THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i

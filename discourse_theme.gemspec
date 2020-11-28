@@ -29,6 +29,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "guard", "~> 2.14"
   spec.add_development_dependency "guard-minitest", "~> 2.4"
   spec.add_development_dependency "webmock", "~> 3.5"
+  spec.add_development_dependency "rubocop"
+  spec.add_development_dependency "rubocop-discourse"
 
   spec.add_dependency "minitar", "~> 0.6"
   spec.add_dependency "listen", "~> 3.1"

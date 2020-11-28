@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "test_helper"
 
 class TestCli < Minitest::Test
@@ -74,8 +75,7 @@ class TestCli < Minitest::Test
     end
     assert(!questions_asked.join("\n").include?("child theme components"))
 
-
-    File.write(File.join(@dir, 'about.json'), {components: ["https://github.com/myorg/myrepo"]}.to_json)
+    File.write(File.join(@dir, 'about.json'), { components: ["https://github.com/myorg/myrepo"] }.to_json)
 
     questions_asked = []
     DiscourseTheme::Cli.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
