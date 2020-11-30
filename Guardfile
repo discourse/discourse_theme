@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 directories %w(app lib test) \
   .select { |d| Dir.exists?(d) ? d : UI.warning("Directory #{d} does not exist") }
 
