@@ -20,11 +20,17 @@ For help run:
 discourse_theme
 ```
 
-it contains two helpers:
+### `discourse_theme new PATH`
 
-You can use `discourse_theme new PATH` to crate a new blank theme, the CLI will guide you through the process.
+Creates a new blank theme. The CLI will guide you through the process.
 
-You can use `discourse_theme watch PATH` to monitor your theme or component for changes, when changed the program will synchronize the theme or component to your Discourse of choice.
+### `discourse_theme download PATH`
+
+Downloads a theme from the server and stores in the designated directory.
+
+### `discourse_theme watch PATH`
+
+Monitors a theme or component for changes. When changed the program will synchronize the theme or component to your Discourse of choice.
 
 ## Contributing
 
