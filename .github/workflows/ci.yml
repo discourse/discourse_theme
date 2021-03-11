@@ -1,37 +1,50 @@
-name: Discourse Theme CLI Tests
+name: CI
 
 on:
   pull_request:
   push:
     branches:
       - master
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+
     strategy:
       matrix:
-        ruby: ["2.7", "2.6"]
+        ruby:
+          - 2.5
+          - 2.6
+          - 2.7
+          - 3.0
+
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-ruby@v1
+
+      - name: Setup ruby
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: Bundler cache
-        uses: actions/cache@v2
-        with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-${{ matrix.ruby }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.ruby }}-gems-
-      - name: Setup gems
-        run: |
-          gem uninstall bundler
-          gem install bundler -v 2.1.4
-          bundle config path vendor/bundle
-          bundle install --jobs 4
-      - name: Tests
-        run: bundle exec rake
-      - name: Rubocop
+          bundler-cache: true
+
+      - name: Lint
         run: bundle exec rubocop
+
+      - name: Tests
+        run: bundle exec rake test
+
+  publish:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Release Gem
+        uses: discourse/publish-rubygems-action@v2-beta
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          GIT_EMAIL: team@discourse.org
+          GIT_NAME: discoursebot

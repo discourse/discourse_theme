@@ -1,11 +1,1 @@
-/.bundle/
-/.yardoc
-/_yardoc/
-/coverage/
-/doc/
-/pkg/
-/spec/reports/
-/tmp/
 Gemfile.lock
-
-.rubocop-https---raw-githubusercontent-com-discourse-discourse-master--rubocop-yml

@@ -38,9 +38,9 @@ module DiscourseTheme
     def usage
       puts "Usage: discourse_theme COMMAND [--reset]"
       puts
-      puts "discourse_theme new DIR : Creates a new theme in the designated directory"
-      puts "discourse_theme download DIR : Download a theme from the server, and store in the designated directory"
-      puts "discourse_theme watch DIR : Watches the theme directory and synchronizes with Discourse"
+      puts "discourse_theme new DIR - Creates a new theme in the designated directory"
+      puts "discourse_theme download DIR - Downloads a theme from the server and stores in the designated directory"
+      puts "discourse_theme watch DIR - Watches the theme directory and synchronizes with Discourse"
       puts
       puts "Use --reset to change the configuration for a directory"
       exit 1
