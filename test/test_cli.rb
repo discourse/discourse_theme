@@ -155,6 +155,7 @@ class TestCli < Minitest::Test
       assert(files.include?("about.json"))
       assert(files.include?("package.json"))
       assert(File.exist?(".eslintrc"))
+      assert(File.exist?(".gitignore"))
       assert(File.exist?(".template-lintrc.js"))
       assert(files.include?("locales/en.yml"))
     end
