@@ -34,9 +34,9 @@ module DiscourseTheme
       json["theme"]["theme_fields"].each do |row|
         if (error = row["error"]) && error.length > 0
           count += 1
-          Cli.error ""
-          Cli.error "Error in #{row["target"]} #{row["name"]}: #{row["error"]}"
-          Cli.error ""
+          UI.error ""
+          UI.error "Error in #{row["target"]} #{row["name"]}: #{row["error"]}"
+          UI.error ""
         end
       end
       count
@@ -59,7 +59,7 @@ module DiscourseTheme
       response = @client.update_theme(@theme_id, args)
       json = JSON.parse(response.body)
         if diagnose_errors(json) != 0
-          Cli.error "(end of errors)"
+          UI.error "(end of errors)"
         end
     end
 
@@ -73,7 +73,7 @@ module DiscourseTheme
         json = JSON.parse(response.body)
         @theme_id = json["theme"]["id"]
         if diagnose_errors(json) != 0
-          Cli.error "(end of errors)"
+          UI.error "(end of errors)"
         end
         @theme_id
       end

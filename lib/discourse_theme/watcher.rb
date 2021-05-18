@@ -23,7 +23,7 @@ module DiscourseTheme
               (resolved = resolve_file(modified[0]))
 
             target, name, type_id = resolved
-            Cli.progress "Fast updating #{target}.scss"
+            UI.progress "Fast updating #{target}.scss"
 
             @uploader.upload_theme_field(
               target: target,
@@ -34,17 +34,17 @@ module DiscourseTheme
           else
             count = modified.length + added.length + removed.length
             if count > 1
-              Cli.progress "Detected changes in #{count} files, uploading theme"
+              UI.progress "Detected changes in #{count} files, uploading theme"
             else
               filename = modified[0] || added[0] || removed[0]
-              Cli.progress "Detected changes in #{filename.gsub(@dir, '')}, uploading theme"
+              UI.progress "Detected changes in #{filename.gsub(@dir, '')}, uploading theme"
             end
             @uploader.upload_full_theme
           end
-          Cli.success "Done! Watching for changes..."
+          UI.success "Done! Watching for changes..."
         rescue DiscourseTheme::ThemeError => e
-          Cli.error "#{e.message}"
-          Cli.progress "Watching for changes..."
+          UI.error "#{e.message}"
+          UI.progress "Watching for changes..."
         end
       end
 
