@@ -1,38 +1,6 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Cli
-
-    @@prompt = ::TTY::Prompt.new(help_color: :cyan)
-    @@pastel = Pastel.new
-
-    def self.yes?(message)
-      @@prompt.yes?(@@pastel.cyan("? ") + message)
-    end
-
-    def self.ask(message, default: nil)
-      @@prompt.ask(@@pastel.cyan("? ") + message, default: default)
-    end
-
-    def self.select(message, options)
-      @@prompt.select(@@pastel.cyan("? ") + message, options)
-    end
-
-    def self.info(message)
-      puts @@pastel.blue("i ") + message
-    end
-
-    def self.progress(message)
-      puts @@pastel.yellow("» ") + message
-    end
-
-    def self.error(message)
-      puts @@pastel.red("✘ #{message}")
-    end
-
-    def self.success(message)
-      puts @@pastel.green("✔ #{message}")
-    end
-
     SETTINGS_FILE = File.expand_path("~/.discourse_theme")
 
     def usage
@@ -63,11 +31,7 @@ module DiscourseTheme
       if command == "new"
         raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
         DiscourseTheme::Scaffold.generate(dir)
-        if Cli.yes?("Would you like to start 'watching' this theme?")
-          args[0] = "watch"
-          Cli.progress "Running discourse_theme #{args.join(' ')}"
-          run(args)
-        end
+        watch_theme?(args)
       elsif command == "watch"
         raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
@@ -81,13 +45,13 @@ module DiscourseTheme
         options["Create and sync with a new theme"] = :create
         options["Select a different theme"] = :select
 
-        choice = Cli.select('How would you like to sync this theme?', options.keys)
+        choice = UI.select('How would you like to sync this theme?', options.keys)
 
         if options[choice] == :create
           theme_id = nil
         elsif options[choice] == :select
           themes = render_theme_list(theme_list)
-          choice = Cli.select('Which theme would you like to sync with?', themes)
+          choice = UI.select('Which theme would you like to sync with?', themes)
           theme_id = extract_theme_id(choice)
           theme = theme_list.find { |t| t["id"] == theme_id }
         end
@@ -102,27 +66,26 @@ module DiscourseTheme
           options["Yes"] = :sync
           options["No"] = :none
           options = options.sort_by { |_, b| b == components.to_sym ? 0 : 1 }.to_h if components
-          choice = Cli.select('Would you like to update child theme components?', options.keys)
+          choice = UI.select('Would you like to update child theme components?', options.keys)
           settings.components = components = options[choice].to_s
         end
 
         uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id, components: components)
 
-        Cli.progress "Uploading theme from #{dir}"
+        UI.progress "Uploading theme from #{dir}"
         settings.theme_id = theme_id = uploader.upload_full_theme
 
-        Cli.success "Theme uploaded (id:#{theme_id})"
-        Cli.info "Preview: #{client.root}/?preview_theme_id=#{theme_id}"
+        UI.success "Theme uploaded (id:#{theme_id})"
+        UI.info "Preview: #{client.root}/?preview_theme_id=#{theme_id}"
         if client.is_theme_creator
-          Cli.info "Manage: #{client.root}/my/themes"
+          UI.info "Manage: #{client.root}/my/themes"
         else
-          Cli.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
+          UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
         end
         watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
 
-        Cli.progress "Watching for changes in #{dir}..."
+        UI.progress "Watching for changes in #{dir}..."
         watcher.watch
-
       elsif command == "download"
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
         downloader = DiscourseTheme::Downloader.new(dir: dir, client: client)
@@ -130,33 +93,39 @@ module DiscourseTheme
         FileUtils.mkdir_p dir unless Dir.exists?(dir)
         raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" unless Dir.empty?(dir)
 
-        Cli.progress "Loading theme list..."
+        UI.progress "Loading theme list..."
         themes = render_theme_list(client.get_themes_list)
 
-        choice = Cli.select('Which theme would you like to download?', themes)
+        choice = UI.select('Which theme would you like to download?', themes)
         theme_id = extract_theme_id(choice)
 
-        Cli.progress "Downloading theme into #{dir}"
+        UI.progress "Downloading theme into #{dir}"
 
         downloader.download_theme(theme_id)
         settings.theme_id = theme_id
 
-        Cli.success "Theme downloaded"
+        UI.success "Theme downloaded"
 
-        if Cli.yes?("Would you like to start 'watching' this theme?")
-          args[0] = "watch"
-          Cli.progress "Running discourse_theme #{args.join(' ')}"
-          run(args)
-        end
+        watch_theme?(args)
       else
         usage
       end
 
-      Cli.progress "Exiting..."
+      UI.progress "Exiting..."
     rescue DiscourseTheme::ThemeError => e
-      Cli.error "#{e.message}"
+      UI.error "#{e.message}"
     rescue Interrupt, TTY::Reader::InputInterrupt => e
-      Cli.error "Interrupted"
+      UI.error "Interrupted"
+    end
+
+    private
+
+    def watch_theme?(args)
+      if UI.yes?("Would you like to start 'watching' this theme?")
+        args[0] = "watch"
+        UI.progress "Running discourse_theme #{args.join(' ')}"
+        run(args)
+      end
     end
 
     def render_theme_list(themes)

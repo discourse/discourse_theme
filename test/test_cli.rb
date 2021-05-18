@@ -50,7 +50,7 @@ class TestCli < Minitest::Test
     args = ["watch", @dir]
 
     # Stub interactive prompts to always return the first option, or "value"
-    DiscourseTheme::Cli.stub(:select, ->(question, options) { options[0] }) do
+    DiscourseTheme::UI.stub(:select, ->(question, options) { options[0] }) do
       suppress_output do
         DiscourseTheme::Cli.new.run(args)
       end
@@ -68,7 +68,7 @@ class TestCli < Minitest::Test
     args = ["watch", @dir]
 
     questions_asked = []
-    DiscourseTheme::Cli.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
+    DiscourseTheme::UI.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
       suppress_output do
         DiscourseTheme::Cli.new.run(args)
       end
@@ -78,7 +78,7 @@ class TestCli < Minitest::Test
     File.write(File.join(@dir, 'about.json'), { components: ["https://github.com/myorg/myrepo"] }.to_json)
 
     questions_asked = []
-    DiscourseTheme::Cli.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
+    DiscourseTheme::UI.stub(:select, ->(question, options) { questions_asked << question; options[0] }) do
       suppress_output do
         DiscourseTheme::Cli.new.run(args)
       end
@@ -93,8 +93,8 @@ class TestCli < Minitest::Test
 
     args = ["download", @dir]
 
-    DiscourseTheme::Cli.stub(:select, ->(question, options) { options[0] }) do
-      DiscourseTheme::Cli.stub(:yes?, false) do
+    DiscourseTheme::UI.stub(:select, ->(question, options) { options[0] }) do
+      DiscourseTheme::UI.stub(:yes?, false) do
         suppress_output do
           DiscourseTheme::Cli.new.run(args)
         end
@@ -131,8 +131,8 @@ class TestCli < Minitest::Test
   def test_new
     args = ["new", @dir]
 
-    DiscourseTheme::Cli.stub(:ask, "my theme name") do
-      DiscourseTheme::Cli.stub(:yes?, false) do
+    DiscourseTheme::UI.stub(:ask, "my theme name") do
+      DiscourseTheme::UI.stub(:yes?, false) do
         suppress_output do
           DiscourseTheme::Cli.new.run(args)
         end
@@ -146,12 +146,17 @@ class TestCli < Minitest::Test
 
     # Spot check a few files
     Dir.chdir(@dir) do
-      folders = Dir.glob("**/*").reject { |f| File.file?(f) }
-      assert_equal(folders.sort, ["common", "desktop", "locales", "mobile"].sort)
+      list = files = Dir.glob("**/*").reject { |f| f.start_with?("node_modules/") }
+      folders = list.reject { |f| File.file?(f) }
+      assert_equal(folders.sort, ["common", "locales", "node_modules", "javascripts", "javascripts/discourse", "javascripts/discourse/api-initializers"].sort)
 
-      files = Dir.glob("**/*").reject { |f| File.directory?(f) }
+      files = list.reject { |f| File.directory?(f) }
       assert(files.include?("settings.yml"))
       assert(files.include?("about.json"))
+      assert(files.include?("package.json"))
+      assert(File.exist?(".eslintrc"))
+      assert(File.exist?(".template-lintrc.js"))
+      assert(files.include?("locales/en.yml"))
     end
   end
 

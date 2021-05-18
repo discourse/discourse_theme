@@ -16,6 +16,7 @@ require 'tty/prompt'
 
 require 'discourse_theme/version'
 require 'discourse_theme/config'
+require 'discourse_theme/ui'
 require 'discourse_theme/cli'
 require 'discourse_theme/client'
 require 'discourse_theme/downloader'

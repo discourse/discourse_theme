@@ -14,8 +14,8 @@ module DiscourseTheme
       @is_theme_creator = !!(THEME_CREATOR_REGEX =~ @url)
 
       if !self.class.has_needed_version?(discourse_version, "2.3.0.beta1")
-        Cli.info "discourse_theme is designed for Discourse 2.3.0.beta1 or above"
-        Cli.info "download will not function, and syncing destination will be unpredictable"
+        UI.info "discourse_theme is designed for Discourse 2.3.0.beta1 or above"
+        UI.info "download will not function, and syncing destination will be unpredictable"
       end
     end
 
@@ -142,26 +142,26 @@ module DiscourseTheme
     def guess_url(settings)
       url = ENV['DISCOURSE_URL']
       if url
-        Cli.progress "Using #{url} from DISCOURSE_URL"
+        UI.progress "Using #{url} from DISCOURSE_URL"
       end
 
       if !url && settings.url
         url = settings.url
-        Cli.progress "Using #{url} from #{DiscourseTheme::Cli::SETTINGS_FILE}"
+        UI.progress "Using #{url} from #{DiscourseTheme::Cli::SETTINGS_FILE}"
       end
 
       if !url || @reset
-        url = Cli.ask("What is the root URL of your Discourse site?", default: url).strip
+        url = UI.ask("What is the root URL of your Discourse site?", default: url).strip
         url = "http://#{url}" unless url =~ /^https?:\/\//
 
         # maybe this is an HTTPS redirect
         uri = URI.parse(url)
         if URI::HTTP === uri && uri.port == 80 && is_https_redirect?(url)
-          Cli.info "Detected that #{url} should be accessed over https"
+          UI.info "Detected that #{url} should be accessed over https"
           url = url.sub("http", "https")
         end
 
-        if Cli.yes?("Would you like this site name stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
+        if UI.yes?("Would you like this site name stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
           settings.url = url
         else
           settings.url = nil
@@ -174,17 +174,17 @@ module DiscourseTheme
     def guess_api_key(settings)
       api_key = ENV['DISCOURSE_API_KEY']
       if api_key
-        Cli.progress "Using api key from DISCOURSE_API_KEY"
+        UI.progress "Using api key from DISCOURSE_API_KEY"
       end
 
       if !api_key && settings.api_key
         api_key = settings.api_key
-        Cli.progress "Using api key from #{DiscourseTheme::Cli::SETTINGS_FILE}"
+        UI.progress "Using api key from #{DiscourseTheme::Cli::SETTINGS_FILE}"
       end
 
       if !api_key || @reset
-        api_key = Cli.ask("What is your API key?", default: api_key).strip
-        if Cli.yes?("Would you like this API key stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
+        api_key = UI.ask("What is your API key?", default: api_key).strip
+        if UI.yes?("Would you like this API key stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
           settings.api_key = api_key
         else
           settings.api_key = nil
