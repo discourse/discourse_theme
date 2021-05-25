@@ -60,11 +60,8 @@ module DiscourseTheme
 
     EN_YML = <<~YAML
       en:
-        #my_locale_key: My Translation
         theme_metadata:
           description: "#DESCRIPTION"
-          settings:
-            # my_setting_name: My Setting Description
     YAML
 
     def self.generate(dir)
