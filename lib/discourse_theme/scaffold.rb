@@ -80,6 +80,17 @@ module DiscourseTheme
 
       FileUtils.mkdir_p dir
       Dir.chdir dir do
+        author = loop do
+          input = UI.ask("Who is authoring the theme?", default: ENV['USER']).to_s.strip
+          if input.empty?
+            UI.error("Author cannot be empty")
+          else
+            break input
+          end
+        end
+
+        description = UI.ask("How would you describe this theme?").to_s.strip
+
         UI.info "Creating about.json"
         about_template = ABOUT_JSON.dup
         about_template[:name] = name
@@ -94,14 +105,6 @@ module DiscourseTheme
         File.write('HELP', HELP)
 
         UI.info "Creating package.json"
-        author = loop do
-          input = UI.ask("Who is authoring the theme?", default: ENV['USER']).to_s.strip
-          if input.empty?
-            UI.error("Author cannot be empty")
-          else
-            break input
-          end
-        end
         File.write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
 
         UI.info "Creating .template-lintrc.js"
@@ -116,7 +119,6 @@ module DiscourseTheme
         locale = "locales/en.yml"
         UI.info "Creating #{locale}"
         FileUtils.mkdir_p(File.dirname(locale))
-        description = UI.ask("How would you describe this theme?").to_s.strip
         File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
         encoded_name = name.downcase.gsub(/[^\w_-]+/, '_')
