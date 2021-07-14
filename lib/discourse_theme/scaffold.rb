@@ -67,7 +67,15 @@ module DiscourseTheme
     def self.generate(dir)
       UI.progress "Generating a scaffold theme at #{dir}"
 
-      name = UI.ask("What would you like to call your theme?").strip
+      name = loop do
+        input = UI.ask("What would you like to call your theme?").to_s.strip
+        if input.empty?
+          UI.error("Theme name cannot be empty")
+        else
+          break input
+        end
+      end
+
       is_component = UI.yes?("Is this a component?")
 
       FileUtils.mkdir_p dir
@@ -86,7 +94,14 @@ module DiscourseTheme
         File.write('HELP', HELP)
 
         UI.info "Creating package.json"
-        author = UI.ask("Who is authoring the theme?").strip
+        author = loop do
+          input = UI.ask("Who is authoring the theme?", default: ENV['USER']).to_s.strip
+          if input.empty?
+            UI.error("Author cannot be empty")
+          else
+            break input
+          end
+        end
         File.write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
 
         UI.info "Creating .template-lintrc.js"
