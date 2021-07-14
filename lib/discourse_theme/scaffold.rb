@@ -134,7 +134,7 @@ module DiscourseTheme
         end
 
         UI.info "Initializing git repo"
-        puts `git init .`
+        puts `git init . --initial-branch=main`
 
         UI.info "Installing dependencies"
         puts `yarn`
