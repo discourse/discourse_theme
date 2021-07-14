@@ -116,7 +116,7 @@ module DiscourseTheme
         locale = "locales/en.yml"
         UI.info "Creating #{locale}"
         FileUtils.mkdir_p(File.dirname(locale))
-        description = UI.ask("How would you describe this theme?").strip
+        description = UI.ask("How would you describe this theme?").to_s.strip
         File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
         initializer = "javascripts/discourse/api-initializers/#{name}.js"
