@@ -119,7 +119,8 @@ module DiscourseTheme
         description = UI.ask("How would you describe this theme?").to_s.strip
         File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
-        initializer = "javascripts/discourse/api-initializers/#{name}.js"
+        encoded_name = name.downcase.gsub(/[^\w_-]+/, '_')
+        initializer = "javascripts/discourse/api-initializers/#{encoded_name}.js"
         UI.info "Creating #{initializer}"
         FileUtils.mkdir_p(File.dirname(initializer))
         File.write(initializer, API_INITIALIZER)
