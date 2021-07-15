@@ -67,11 +67,30 @@ module DiscourseTheme
     def self.generate(dir)
       UI.progress "Generating a scaffold theme at #{dir}"
 
-      name = UI.ask("What would you like to call your theme?").strip
+      name = loop do
+        input = UI.ask("What would you like to call your theme?").to_s.strip
+        if input.empty?
+          UI.error("Theme name cannot be empty")
+        else
+          break input
+        end
+      end
+
       is_component = UI.yes?("Is this a component?")
 
       FileUtils.mkdir_p dir
       Dir.chdir dir do
+        author = loop do
+          input = UI.ask("Who is authoring the theme?", default: ENV['USER']).to_s.strip
+          if input.empty?
+            UI.error("Author cannot be empty")
+          else
+            break input
+          end
+        end
+
+        description = UI.ask("How would you describe this theme?").to_s.strip
+
         UI.info "Creating about.json"
         about_template = ABOUT_JSON.dup
         about_template[:name] = name
@@ -86,7 +105,6 @@ module DiscourseTheme
         File.write('HELP', HELP)
 
         UI.info "Creating package.json"
-        author = UI.ask("Who is authoring the theme?").strip
         File.write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
 
         UI.info "Creating .template-lintrc.js"
@@ -101,10 +119,10 @@ module DiscourseTheme
         locale = "locales/en.yml"
         UI.info "Creating #{locale}"
         FileUtils.mkdir_p(File.dirname(locale))
-        description = UI.ask("How would you describe this theme?").strip
         File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
-        initializer = "javascripts/discourse/api-initializers/#{name}.js"
+        encoded_name = name.downcase.gsub(/[^\w_-]+/, '_')
+        initializer = "javascripts/discourse/api-initializers/#{encoded_name}.js"
         UI.info "Creating #{initializer}"
         FileUtils.mkdir_p(File.dirname(initializer))
         File.write(initializer, API_INITIALIZER)
@@ -116,7 +134,7 @@ module DiscourseTheme
         end
 
         UI.info "Initializing git repo"
-        puts `git init .`
+        puts `git init . --initial-branch=main`
 
         UI.info "Installing dependencies"
         puts `yarn`

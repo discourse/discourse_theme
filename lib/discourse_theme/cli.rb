@@ -29,7 +29,10 @@ module DiscourseTheme
       components = settings.components
 
       if command == "new"
-        raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
+        raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
+        raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
+        raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
+
         DiscourseTheme::Scaffold.generate(dir)
         watch_theme?(args)
       elsif command == "watch"
@@ -119,6 +122,18 @@ module DiscourseTheme
     end
 
     private
+
+    def command?(cmd)
+      exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+          exe = File.join(path, "#{cmd}#{ext}")
+          return true if File.executable?(exe) && !File.directory?(exe)
+        end
+      end
+
+      false
+    end
 
     def watch_theme?(args)
       if UI.yes?("Would you like to start 'watching' this theme?")
