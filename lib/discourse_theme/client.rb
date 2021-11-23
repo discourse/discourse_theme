@@ -105,7 +105,7 @@ module DiscourseTheme
     end
 
     def root
-      @url
+      URI.parse(@url).path
     end
 
     def is_theme_creator
@@ -116,6 +116,12 @@ module DiscourseTheme
 
     def request(request, never_404: false)
       uri = URI.parse(@url)
+
+      if uri.userinfo
+        username, password = uri.userinfo.split(":", 2)
+        request.basic_auth username, password
+      end
+
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = URI::HTTPS === uri
       add_headers(request)

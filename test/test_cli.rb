@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "test_helper"
+require "base64"
 
 class TestCli < Minitest::Test
 
@@ -59,6 +60,27 @@ class TestCli < Minitest::Test
     assert_requested(@about_stub, times: 1)
     assert_requested(@themes_stub, times: 1)
     assert_requested(@import_stub, times: 1)
+    assert_requested(@download_tar_stub, times: 0)
+
+    assert_equal(settings.theme_id, 6)
+  end
+
+  def test_watch_with_basic_auth
+    ENV["DISCOURSE_URL"] = "http://username:password@my.forum.com"
+    args = ["watch", @dir]
+
+    # Stub interactive prompts to always return the first option, or "value"
+    DiscourseTheme::UI.stub(:select, ->(question, options) { options[0] }) do
+      suppress_output do
+        DiscourseTheme::Cli.new.run(args)
+      end
+    end
+
+    expected_header = { "Authorization" => "Basic #{Base64.strict_encode64("username:password")}" }
+
+    assert_requested(@about_stub.with(headers: expected_header), times: 1)
+    assert_requested(@themes_stub.with(headers: expected_header), times: 1)
+    assert_requested(@import_stub.with(headers: expected_header), times: 1)
     assert_requested(@download_tar_stub, times: 0)
 
     assert_equal(settings.theme_id, 6)
