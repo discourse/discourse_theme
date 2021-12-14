@@ -8,6 +8,7 @@ module DiscourseTheme
       puts
       puts "discourse_theme new DIR - Creates a new theme in the designated directory"
       puts "discourse_theme download DIR - Downloads a theme from the server and stores in the designated directory"
+      puts "discourse_theme upload DIR - Uploads the theme directory to Discourse"
       puts "discourse_theme watch DIR - Watches the theme directory and synchronizes with Discourse"
       puts
       puts "Use --reset to change the configuration for a directory"
@@ -110,6 +111,28 @@ module DiscourseTheme
         UI.success "Theme downloaded"
 
         watch_theme?(args)
+      elsif command == "upload"
+        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
+        raise DiscourseTheme::ThemeError.new "No theme_id is set, please sync via the 'watch' command initially" if theme_id == 0
+        client = DiscourseTheme::Client.new(dir, settings, reset: reset)
+
+        theme_list = client.get_themes_list
+
+        theme = theme_list.find { |t| t["id"] == theme_id }
+        raise DiscourseTheme::ThemeError.new "theme_id is set, but the theme does not exist in Discourse" unless theme
+
+        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id, components: components)
+
+        UI.progress "Uploading theme (id:#{theme_id}) from #{dir} "
+        settings.theme_id = theme_id = uploader.upload_full_theme
+
+        UI.success "Theme uploaded (id:#{theme_id})"
+        UI.info "Preview: #{client.root}/?preview_theme_id=#{theme_id}"
+        if client.is_theme_creator
+          UI.info "Manage: #{client.root}/my/themes"
+        else
+          UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
+        end
       else
         usage
       end

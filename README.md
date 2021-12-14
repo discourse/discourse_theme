@@ -32,6 +32,10 @@ Downloads a theme from the server and stores in the designated directory.
 
 Monitors a theme or component for changes. When changed the program will synchronize the theme or component to your Discourse of choice.
 
+### `discourse_theme upload PATH`
+
+Uploads a theme to the server. Requires the theme to have been previously synchronized via `watch`.
+
 ## Contributing
 
 Bug reports and pull requests are welcome at [Meta Discourse](https://meta.discourse.org). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
