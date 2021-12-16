@@ -108,6 +108,27 @@ class TestCli < Minitest::Test
     assert(questions_asked.join("\n").include?("child theme components"))
   end
 
+  def test_upload
+    import_stub = stub_request(:post, "http://my.forum.com/admin/themes/import.json").
+      to_return(status: 200, body: { theme: { id: "1", name: "Existing theme", theme_fields: [] } }.to_json)
+
+    args = ["upload", @dir]
+
+    # Set an existing theme_id, as this is required for upload.
+    settings.theme_id = 1
+
+    suppress_output do
+      DiscourseTheme::Cli.new.run(args)
+    end
+
+    assert_requested(@about_stub, times: 1)
+    assert_requested(@themes_stub, times: 1)
+    assert_requested(import_stub, times: 1)
+    assert_requested(@download_tar_stub, times: 0)
+
+    assert_equal(settings.theme_id, 1)
+  end
+
   def test_download
     @download_zip_stub = stub_request(:get, "http://my.forum.com/admin/customize/themes/5/export").
       to_return(status: 200, body: File.new("test/fixtures/discourse-test-theme.zip"),
