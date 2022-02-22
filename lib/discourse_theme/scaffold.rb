@@ -47,7 +47,11 @@ module DiscourseTheme
 
     ESLINT_RC = <<~STR
       {
-        "extends": "eslint-config-discourse"
+        "extends": "eslint-config-discourse",
+        "globals": {
+          "settings": "readonly",
+          "themePrefix": "readonly"
+        }
       }
     STR
 
