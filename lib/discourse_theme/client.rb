@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Client
-    THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
+    THEME_CREATOR_REGEX = /^https:\/\/(theme-creator\.discourse\.org|discourse\.theme-creator\.io)$/i
 
     def initialize(dir, settings, reset:)
       @reset = reset
