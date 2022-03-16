@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Uploader
-
-    THEME_CREATOR_REGEX = /^https:\/\/theme-creator.discourse.org$/i
-
     def initialize(dir:, client:, theme_id: nil, components: nil)
       @dir = dir
       @client = client
