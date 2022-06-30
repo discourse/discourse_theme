@@ -3,6 +3,8 @@ module DiscourseTheme
   class Client
     THEME_CREATOR_REGEX = /^https:\/\/(theme-creator\.discourse\.org|discourse\.theme-creator\.io)$/i
 
+    attr_reader :url
+
     def initialize(dir, settings, reset:)
       @reset = reset
       @url = guess_url(settings)
