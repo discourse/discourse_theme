@@ -19,7 +19,7 @@ module DiscourseTheme
       end
     end
 
-    # From https://github.com/discourse/discourse/blob/master/lib/version.rb
+    # From https://github.com/discourse/discourse/blob/main/lib/version.rb
     def self.has_needed_version?(current, needed)
       current_split = current.split('.')
       needed_split = needed.split('.')
