@@ -81,13 +81,16 @@ module DiscourseTheme
 
         UI.success "Theme uploaded (id:#{theme_id})"
         UI.info "Preview: #{client.root}/?preview_theme_id=#{theme_id}"
+
         if client.is_theme_creator
           UI.info "Manage: #{client.root}/my/themes"
         else
           UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
         end
-        watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
 
+        UI.info "Tests: #{client.root}/theme-qunit?id=#{theme_id}"
+
+        watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
         UI.progress "Watching for changes in #{dir}..."
         watcher.watch
       elsif command == "download"
