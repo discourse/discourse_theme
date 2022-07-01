@@ -3,6 +3,8 @@ module DiscourseTheme
   class Client
     THEME_CREATOR_REGEX = /^https:\/\/(theme-creator\.discourse\.org|discourse\.theme-creator\.io)$/i
 
+    attr_reader :url
+
     def initialize(dir, settings, reset:)
       @reset = reset
       @url = guess_url(settings)
@@ -19,7 +21,7 @@ module DiscourseTheme
       end
     end
 
-    # From https://github.com/discourse/discourse/blob/master/lib/version.rb
+    # From https://github.com/discourse/discourse/blob/main/lib/version.rb
     def self.has_needed_version?(current, needed)
       current_split = current.split('.')
       needed_split = needed.split('.')
