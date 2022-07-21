@@ -107,7 +107,7 @@ module DiscourseTheme
     end
 
     def root
-      URI.parse(@url).path
+      URI.parse(@url)
     end
 
     def is_theme_creator
