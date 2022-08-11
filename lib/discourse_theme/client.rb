@@ -107,7 +107,12 @@ module DiscourseTheme
     end
 
     def root
-      URI.parse(@url)
+      parsed = URI.parse(@url)
+      # we must strip the username/password so it does not
+      # confuse AWS albs
+      parsed.user = nil
+      parsed.password = nil
+      parsed
     end
 
     def is_theme_creator
