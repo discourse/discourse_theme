@@ -45,6 +45,7 @@ class TestConfig < Minitest::Test
 
     config = nil
     captured = capture_stderr do
+      !!config # avoid warning
       config = DiscourseTheme::Config.new filename
     end
 

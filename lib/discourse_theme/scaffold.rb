@@ -125,7 +125,7 @@ module DiscourseTheme
         FileUtils.mkdir_p(File.dirname(locale))
         File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
-        encoded_name = name.downcase.gsub(/[^\w_-]+/, '_')
+        encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, '_')
         initializer = "javascripts/discourse/api-initializers/#{encoded_name}.js"
         UI.info "Creating #{initializer}"
         FileUtils.mkdir_p(File.dirname(initializer))
