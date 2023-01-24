@@ -1,7 +1,15 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Cli
-    SETTINGS_FILE = File.expand_path("~/.discourse_theme")
+    @@cli_settings_filename = File.expand_path("~/.discourse_theme")
+
+    def self.settings_file
+      @@cli_settings_filename
+    end
+
+    def self.set_settings_file(filename)
+      @@cli_settings_filename = filename
+    end
 
     def usage
       puts "Usage: discourse_theme COMMAND [--reset]"
@@ -23,7 +31,7 @@ module DiscourseTheme
       command = args[0].to_s.downcase
       dir = File.expand_path(args[1])
 
-      config = DiscourseTheme::Config.new(SETTINGS_FILE)
+      config = DiscourseTheme::Config.new(self.class.settings_file)
       settings = config[dir]
 
       theme_id = settings.theme_id

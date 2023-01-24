@@ -160,7 +160,7 @@ module DiscourseTheme
 
       if !url && settings.url
         url = settings.url
-        UI.progress "Using #{url} from #{DiscourseTheme::Cli::SETTINGS_FILE}"
+        UI.progress "Using #{url} from #{DiscourseTheme::Cli.settings_file}"
       end
 
       if !url || @reset
@@ -174,7 +174,7 @@ module DiscourseTheme
           url = url.sub("http", "https")
         end
 
-        if UI.yes?("Would you like this site name stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
+        if UI.yes?("Would you like this site name stored in #{DiscourseTheme::Cli.settings_file}?")
           settings.url = url
         else
           settings.url = nil
@@ -192,12 +192,12 @@ module DiscourseTheme
 
       if !api_key && settings.api_key
         api_key = settings.api_key
-        UI.progress "Using api key from #{DiscourseTheme::Cli::SETTINGS_FILE}"
+        UI.progress "Using api key from #{DiscourseTheme::Cli.settings_file}"
       end
 
       if !api_key || @reset
         api_key = UI.ask("What is your API key?", default: api_key).strip
-        if UI.yes?("Would you like this API key stored in #{DiscourseTheme::Cli::SETTINGS_FILE}?")
+        if UI.yes?("Would you like this API key stored in #{DiscourseTheme::Cli.settings_file}?")
           settings.api_key = api_key
         else
           settings.api_key = nil

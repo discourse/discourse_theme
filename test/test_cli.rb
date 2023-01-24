@@ -27,7 +27,7 @@ class TestCli < Minitest::Test
     DiscourseTheme::Watcher.return_immediately!
   end
 
-  DiscourseTheme::Cli::SETTINGS_FILE = Tempfile.new('settings')
+  DiscourseTheme::Cli.set_settings_file(Tempfile.new('settings'))
 
   def teardown
     FileUtils.remove_dir(@dir)
@@ -44,7 +44,7 @@ class TestCli < Minitest::Test
   end
 
   def settings
-    DiscourseTheme::Config.new(DiscourseTheme::Cli::SETTINGS_FILE)[@dir]
+    DiscourseTheme::Config.new(DiscourseTheme::Cli::settings_file)[@dir]
   end
 
   def test_watch
