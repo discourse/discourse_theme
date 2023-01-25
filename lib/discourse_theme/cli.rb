@@ -7,7 +7,7 @@ module DiscourseTheme
       @@cli_settings_filename
     end
 
-    def self.set_settings_file(filename)
+    def self.settings_file=(filename)
       @@cli_settings_filename = filename
     end
 
