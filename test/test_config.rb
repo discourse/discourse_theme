@@ -43,10 +43,7 @@ class TestConfig < Minitest::Test
 
     File.write(filename, "x\nb:")
 
-    config = nil
-    captured = capture_stderr do
-      config = DiscourseTheme::Config.new filename
-    end
+    captured = capture_stderr { DiscourseTheme::Config.new filename }
 
     assert(captured.include? "ERROR")
 

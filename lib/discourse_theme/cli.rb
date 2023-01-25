@@ -1,7 +1,15 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Cli
-    SETTINGS_FILE = File.expand_path("~/.discourse_theme")
+    @@cli_settings_filename = File.expand_path("~/.discourse_theme")
+
+    def self.settings_file
+      @@cli_settings_filename
+    end
+
+    def self.settings_file=(filename)
+      @@cli_settings_filename = filename
+    end
 
     def usage
       puts "Usage: discourse_theme COMMAND [--reset]"
@@ -23,21 +31,21 @@ module DiscourseTheme
       command = args[0].to_s.downcase
       dir = File.expand_path(args[1])
 
-      config = DiscourseTheme::Config.new(SETTINGS_FILE)
+      config = DiscourseTheme::Config.new(self.class.settings_file)
       settings = config[dir]
 
       theme_id = settings.theme_id
       components = settings.components
 
       if command == "new"
-        raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty" if Dir.exists?(dir) && !Dir.empty?(dir)
+        raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty" if Dir.exist?(dir) && !Dir.empty?(dir)
         raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
         raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
 
         DiscourseTheme::Scaffold.generate(dir)
         watch_theme?(args)
       elsif command == "watch"
-        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
+        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
 
         theme_list = client.get_themes_list
@@ -97,7 +105,7 @@ module DiscourseTheme
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
         downloader = DiscourseTheme::Downloader.new(dir: dir, client: client)
 
-        FileUtils.mkdir_p dir unless Dir.exists?(dir)
+        FileUtils.mkdir_p dir unless Dir.exist?(dir)
         raise DiscourseTheme::ThemeError.new "'#{dir} is not empty" unless Dir.empty?(dir)
 
         UI.progress "Loading theme list..."
@@ -115,7 +123,7 @@ module DiscourseTheme
 
         watch_theme?(args)
       elsif command == "upload"
-        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exists?(dir)
+        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
         raise DiscourseTheme::ThemeError.new "No theme_id is set, please sync via the 'watch' command initially" if theme_id == 0
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
 
