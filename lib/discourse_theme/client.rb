@@ -112,7 +112,7 @@ module DiscourseTheme
       # confuse AWS albs
       parsed.user = nil
       parsed.password = nil
-      parsed
+      parsed.to_s
     end
 
     def is_theme_creator
