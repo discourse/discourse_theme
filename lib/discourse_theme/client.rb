@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Client
-    THEME_CREATOR_REGEX = /^https:\/\/(theme-creator\.discourse\.org|discourse\.theme-creator\.io)$/i
+    THEME_CREATOR_REGEX =
+      %r{^https://(theme-creator\.discourse\.org|discourse\.theme-creator\.io)$}i
 
     attr_reader :url
 
@@ -23,17 +24,17 @@ module DiscourseTheme
 
     # From https://github.com/discourse/discourse/blob/main/lib/version.rb
     def self.has_needed_version?(current, needed)
-      current_split = current.split('.')
-      needed_split = needed.split('.')
+      current_split = current.split(".")
+      needed_split = needed.split(".")
 
       (0..[current_split.size, needed_split.size].max).each do |idx|
-        current_str = current_split[idx] || ''
+        current_str = current_split[idx] || ""
 
-        c0 = (needed_split[idx] || '').sub('beta', '').to_i
-        c1 = (current_str || '').sub('beta', '').to_i
+        c0 = (needed_split[idx] || "").sub("beta", "").to_i
+        c1 = (current_str || "").sub("beta", "").to_i
 
         # beta is less than stable
-        return false if current_str.include?('beta') && (c0 == 0) && (c1 > 0)
+        return false if current_str.include?("beta") && (c0 == 0) && (c1 > 0)
 
         return true if c1 > c0
         return false if c0 > c1
@@ -43,12 +44,7 @@ module DiscourseTheme
     end
 
     def get_themes_list
-      endpoint = root +
-        if @is_theme_creator
-          "/user_themes.json"
-        else
-          "/admin/customize/themes.json"
-        end
+      endpoint = root + (@is_theme_creator ? "/user_themes.json" : "/admin/customize/themes.json")
 
       response = request(Net::HTTP::Get.new(endpoint), never_404: true)
       json = JSON.parse(response.body)
@@ -56,12 +52,9 @@ module DiscourseTheme
     end
 
     def get_raw_theme_export(id)
-      endpoint = root +
-        if @is_theme_creator
-          "/user_themes/#{id}/export"
-        else
-          "/admin/customize/themes/#{id}/export"
-        end
+      endpoint =
+        root +
+          (@is_theme_creator ? "/user_themes/#{id}/export" : "/admin/customize/themes/#{id}/export")
 
       response = request(Net::HTTP::Get.new endpoint)
       raise "Error downloading theme: #{response.code}" unless response.code.to_i == 200
@@ -70,32 +63,24 @@ module DiscourseTheme
     end
 
     def update_theme(id, args)
-      endpoint = root +
-        if @is_theme_creator
-          "/user_themes/#{id}"
-        else
-          "/admin/themes/#{id}"
-        end
+      endpoint = root + (@is_theme_creator ? "/user_themes/#{id}" : "/admin/themes/#{id}")
 
-      put = Net::HTTP::Put.new(endpoint, 'Content-Type' => 'application/json')
+      put = Net::HTTP::Put.new(endpoint, "Content-Type" => "application/json")
       put.body = args.to_json
       request(put)
     end
 
     def upload_full_theme(tgz, theme_id:, components:)
-      endpoint = root +
-        if @is_theme_creator
-          "/user_themes/import.json"
-        else
-          "/admin/themes/import.json"
-        end
+      endpoint =
+        root + (@is_theme_creator ? "/user_themes/import.json" : "/admin/themes/import.json")
 
-      post = Net::HTTP::Post::Multipart.new(
-        endpoint,
-        "theme_id" => theme_id,
-        "components" => components,
-        "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz")
-      )
+      post =
+        Net::HTTP::Post::Multipart.new(
+          endpoint,
+          "theme_id" => theme_id,
+          "components" => components,
+          "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz"),
+        )
       request(post)
     end
 
@@ -132,14 +117,21 @@ module DiscourseTheme
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = URI::HTTPS === uri
       add_headers(request)
-      http.request(request).tap do |response|
-        if response.code == '404' && never_404
-          raise DiscourseTheme::ThemeError.new "Error: Incorrect site URL, or API key does not have the correct privileges"
-        elsif !['200', '201'].include?(response.code)
-          errors = JSON.parse(response.body)["errors"].join(', ') rescue nil
-          raise DiscourseTheme::ThemeError.new "Error #{response.code} for #{request.path.split("?")[0]}#{(": " + errors) if errors}"
+      http
+        .request(request)
+        .tap do |response|
+          if response.code == "404" && never_404
+            raise DiscourseTheme::ThemeError.new "Error: Incorrect site URL, or API key does not have the correct privileges"
+          elsif !%w[200 201].include?(response.code)
+            errors =
+              begin
+                JSON.parse(response.body)["errors"].join(", ")
+              rescue StandardError
+                nil
+              end
+            raise DiscourseTheme::ThemeError.new "Error #{response.code} for #{request.path.split("?")[0]}#{(": " + errors) if errors}"
+          end
         end
-      end
     rescue Errno::ECONNREFUSED
       raise DiscourseTheme::ThemeError.new "Connection refused for #{request.path}"
     end
@@ -153,19 +145,17 @@ module DiscourseTheme
     end
 
     def guess_url(settings)
-      url = ENV['DISCOURSE_URL']
-      if url
-        UI.progress "Using #{url} from DISCOURSE_URL"
-      end
+      url = normalize_url(ENV["DISCOURSE_URL"])
+      UI.progress "Using #{url} from DISCOURSE_URL" if url
 
       if !url && settings.url
-        url = settings.url
+        url = normalize_url(settings.url)
         UI.progress "Using #{url} from #{DiscourseTheme::Cli.settings_file}"
       end
 
       if !url || @reset
-        url = UI.ask("What is the root URL of your Discourse site?", default: url).strip
-        url = "http://#{url}" unless url =~ /^https?:\/\//
+        url = normalize_url(UI.ask("What is the root URL of your Discourse site?", default: url))
+        url = "http://#{url}" unless url =~ %r{^https?://}
 
         # maybe this is an HTTPS redirect
         uri = URI.parse(url)
@@ -184,11 +174,13 @@ module DiscourseTheme
       url
     end
 
+    def normalize_url(url)
+      url&.strip&.chomp("/")
+    end
+
     def guess_api_key(settings)
-      api_key = ENV['DISCOURSE_API_KEY']
-      if api_key
-        UI.progress "Using api key from DISCOURSE_API_KEY"
-      end
+      api_key = ENV["DISCOURSE_API_KEY"]
+      UI.progress "Using api key from DISCOURSE_API_KEY" if api_key
 
       if !api_key && settings.api_key
         api_key = settings.api_key
@@ -213,8 +205,7 @@ module DiscourseTheme
       path = "/" if path.empty?
       req = Net::HTTP::Get.new("/")
       response = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
-      Net::HTTPRedirection === response && response['location'] =~ /^https/i
+      Net::HTTPRedirection === response && response["location"] =~ /^https/i
     end
-
   end
 end
