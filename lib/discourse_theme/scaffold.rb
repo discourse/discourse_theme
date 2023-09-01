@@ -7,7 +7,6 @@ module DiscourseTheme
 
     BLANK_FILES = %w{
       common/common.scss
-
       settings.yml
     }
 
