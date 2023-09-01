@@ -1,14 +1,10 @@
 # frozen_string_literal: true
 
+require 'date'
 require 'json'
 
 module DiscourseTheme
   class Scaffold
-
-    BLANK_FILES = %w{
-      common/common.scss
-      settings.yml
-    }
 
     ABOUT_JSON = {
       about_url: nil,
@@ -89,6 +85,11 @@ module DiscourseTheme
           description: "#DESCRIPTION"
     YAML
 
+    SETTINGS_YML = <<~YAML
+      foo_setting:
+        default: ""
+    YAML
+
     def self.generate(dir)
       UI.progress "Generating a scaffold theme at #{dir}"
 
@@ -116,7 +117,6 @@ module DiscourseTheme
 
         description = UI.ask("How would you describe this theme?").to_s.strip
 
-        UI.info "Creating about.json"
         about_template = ABOUT_JSON.dup
         about_template[:name] = name
         if is_component
@@ -124,50 +124,35 @@ module DiscourseTheme
         else
           about_template[:color_schemes] = {}
         end
-        File.write('about.json', JSON.pretty_generate(about_template))
-
-        UI.info "Creating HELP"
-        File.write('HELP', HELP)
-
-        UI.info "Creating LICENSE"
-        File.write('LICENSE', LICENSE.sub("#YEAR", "#{Date.today.year}").sub("#AUTHOR", author))
-
-        UI.info "Creating package.json"
-        File.write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
-
-        UI.info "Creating .template-lintrc.js"
-        File.write('.template-lintrc.js', TEMPLATE_LINT_RC)
-
-        UI.info "Creating .eslintrc"
-        File.write('.eslintrc', ESLINT_RC)
-
-        UI.info "Creating .gitignore"
-        File.write('.gitignore', GIT_IGNORE)
-
-        locale = "locales/en.yml"
-        UI.info "Creating #{locale}"
-        FileUtils.mkdir_p(File.dirname(locale))
-        File.write(locale, EN_YML.sub("#DESCRIPTION", description))
 
         encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, '_')
-        initializer = "javascripts/discourse/api-initializers/#{encoded_name}.js"
-        UI.info "Creating #{initializer}"
-        FileUtils.mkdir_p(File.dirname(initializer))
-        File.write(initializer, API_INITIALIZER)
 
-        BLANK_FILES.each do |f|
-          UI.info "Creating #{f}"
-          FileUtils.mkdir_p File.dirname(f)
-          FileUtils.touch f
-        end
+        write('about.json', JSON.pretty_generate(about_template))
+        write('HELP', HELP)
+        write('LICENSE', LICENSE.sub("#YEAR", "#{Date.today.year}").sub("#AUTHOR", author))
+        write('.eslintrc', ESLINT_RC)
+        write('.gitignore', GIT_IGNORE)
+        write('.template-lintrc.js', TEMPLATE_LINT_RC)
+        write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
+        write('settings.yml', SETTINGS_YML)
+        write('common/common.scss', '')
+        write("javascripts/discourse/api-initializers/#{encoded_name}.js", API_INITIALIZER)
+        write('locales/en.yml', EN_YML.sub("#DESCRIPTION", description))
 
         UI.info "Initializing git repo"
-        puts `git init`
-        puts `git symbolic-ref HEAD refs/heads/main`
+        puts `git init && git symbolic-ref HEAD refs/heads/main`
 
         UI.info "Installing dependencies"
         puts `yarn`
       end
+    end
+
+    private
+
+    def self.write(filename, contents)
+      UI.info "Creating #{filename}"
+      FileUtils.mkdir_p(File.dirname(filename))
+      File.write(filename, contents)
     end
   end
 end
