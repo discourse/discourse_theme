@@ -51,7 +51,7 @@ module DiscourseTheme
     API_INITIALIZER = <<~STR
       import { apiInitializer } from "discourse/lib/api";
 
-      export default apiInitializer("0.11.1", api => {
+      export default apiInitializer("1.8.0", api => {
         console.log("hello world from api initializer!");
       });
     STR
