@@ -47,7 +47,7 @@ module DiscourseTheme
     API_INITIALIZER = <<~STR
       import { apiInitializer } from "discourse/lib/api";
 
-      export default apiInitializer("1.8.0", api => {
+      export default apiInitializer("1.8.0", (api) => {
         console.log("hello world from api initializer!");
       });
     STR
@@ -86,7 +86,7 @@ module DiscourseTheme
     YAML
 
     SETTINGS_YML = <<~YAML
-      foo_setting:
+      todo_rename_and_use_setting:
         default: ""
     YAML
 
