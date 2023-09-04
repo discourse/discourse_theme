@@ -7,8 +7,8 @@ module DiscourseTheme
   class Scaffold
 
     ABOUT_JSON = {
-      about_url: nil,
-      license_url: nil,
+      about_url: "TODO: Put your theme's public repo or Meta topic URL here",
+      license_url: "TODO: Put your theme's LICENSE URL here",
       assets: {}
     }
 
