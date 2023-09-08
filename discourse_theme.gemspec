@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "multipart-post", "~> 2.0"
   spec.add_runtime_dependency "tty-prompt", "~> 0.18"
   spec.add_runtime_dependency "rubyzip", "~> 1.2"
+  spec.add_runtime_dependency "selenium-webdriver", "> 4.11"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
@@ -40,4 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "m"
   spec.add_development_dependency "syntax_tree"
   spec.add_development_dependency "syntax_tree-disable_ternary"
+  spec.add_development_dependency "mocha"
 end
