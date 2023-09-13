@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 class DiscourseTheme::Config
-
   class PathSetting
     def initialize(config, path)
       @config = config
@@ -79,7 +78,7 @@ class DiscourseTheme::Config
       begin
         @raw_config = YAML.load_file(@filename)
         raise unless Hash === @raw_config
-      rescue
+      rescue StandardError
         @raw_config = {}
         $stderr.puts "ERROR: #{@filename} contains invalid config, resetting"
       end

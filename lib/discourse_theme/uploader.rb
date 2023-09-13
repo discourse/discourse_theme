@@ -9,13 +9,13 @@ module DiscourseTheme
     end
 
     def compress_dir(gzip, dir)
-      sgz = Zlib::GzipWriter.new(File.open(gzip, 'wb'))
+      sgz = Zlib::GzipWriter.new(File.open(gzip, "wb"))
       tar = Archive::Tar::Minitar::Output.new(sgz)
 
       Dir.chdir(dir + "/../") do
         Find.find(File.basename(dir)) do |x|
           bn = File.basename(x)
-          Find.prune if bn == "node_modules" || bn == "src" || bn[0] == ?.
+          Find.prune if bn == "node_modules" || bn == "src" || bn[0] == "."
           next if File.directory?(x)
 
           Minitar.pack_file(x, tar)
@@ -39,25 +39,18 @@ module DiscourseTheme
       count
     end
 
-    def upload_theme_field(target: , name: , type_id: , value:)
+    def upload_theme_field(target:, name:, type_id:, value:)
       raise "expecting theme_id to be set!" unless @theme_id
 
       args = {
         theme: {
-          theme_fields: [{
-            name: name,
-            target: target,
-            type_id: type_id,
-            value: value
-          }]
-        }
+          theme_fields: [{ name: name, target: target, type_id: type_id, value: value }],
+        },
       }
 
       response = @client.update_theme(@theme_id, args)
       json = JSON.parse(response.body)
-        if diagnose_errors(json) != 0
-          UI.error "(end of errors)"
-        end
+      UI.error "(end of errors)" if diagnose_errors(json) != 0
     end
 
     def upload_full_theme
@@ -69,14 +62,11 @@ module DiscourseTheme
 
         json = JSON.parse(response.body)
         @theme_id = json["theme"]["id"]
-        if diagnose_errors(json) != 0
-          UI.error "(end of errors)"
-        end
+        UI.error "(end of errors)" if diagnose_errors(json) != 0
         @theme_id
       end
     ensure
       FileUtils.rm_f filename
     end
-
   end
 end

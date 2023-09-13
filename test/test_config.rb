@@ -46,7 +46,6 @@ class TestConfig < Minitest::Test
     captured = capture_stderr { DiscourseTheme::Config.new filename }
 
     assert(captured.include? "ERROR")
-
   ensure
     File.unlink filename
   end
@@ -61,7 +60,6 @@ class TestConfig < Minitest::Test
     config = DiscourseTheme::Config.new filename
     assert_nil(config["/test"].url)
     assert_equal("abc", config["/test"].api_key)
-
   ensure
     File.unlink(filename)
   end
@@ -78,7 +76,6 @@ class TestConfig < Minitest::Test
 
     assert_equal("bla", settings.api_key)
     assert_equal("http://a.com", settings.url)
-
   ensure
     File.unlink(filename)
   end
