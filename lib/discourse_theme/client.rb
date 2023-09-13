@@ -44,7 +44,15 @@ module DiscourseTheme
     end
 
     def get_themes_list
-      endpoint = root + (@is_theme_creator ? "/user_themes.json" : "/admin/customize/themes.json")
+      endpoint =
+        root +
+          (
+            if @is_theme_creator
+              "/user_themes.json"
+            else
+              "/admin/customize/themes.json"
+            end
+          )
 
       response = request(Net::HTTP::Get.new(endpoint), never_404: true)
       json = JSON.parse(response.body)
@@ -54,7 +62,13 @@ module DiscourseTheme
     def get_raw_theme_export(id)
       endpoint =
         root +
-          (@is_theme_creator ? "/user_themes/#{id}/export" : "/admin/customize/themes/#{id}/export")
+          (
+            if @is_theme_creator
+              "/user_themes/#{id}/export"
+            else
+              "/admin/customize/themes/#{id}/export"
+            end
+          )
 
       response = request(Net::HTTP::Get.new endpoint)
       raise "Error downloading theme: #{response.code}" unless response.code.to_i == 200
@@ -72,7 +86,14 @@ module DiscourseTheme
 
     def upload_full_theme(tgz, theme_id:, components:)
       endpoint =
-        root + (@is_theme_creator ? "/user_themes/import.json" : "/admin/themes/import.json")
+        root +
+          (
+            if @is_theme_creator
+              "/user_themes/import.json"
+            else
+              "/admin/themes/import.json"
+            end
+          )
 
       post =
         Net::HTTP::Post::Multipart.new(

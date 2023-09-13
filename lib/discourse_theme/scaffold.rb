@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require 'date'
-require 'json'
+require "date"
+require "json"
 
 module DiscourseTheme
   class Scaffold
-
     ABOUT_JSON = {
       about_url: "TODO: Put your theme's public repo or Meta topic URL here",
       license_url: "TODO: Put your theme's LICENSE URL here",
-      assets: {}
+      assets: {
+      },
     }
 
     HELP = <<~STR
@@ -93,27 +93,29 @@ module DiscourseTheme
     def self.generate(dir)
       UI.progress "Generating a scaffold theme at #{dir}"
 
-      name = loop do
-        input = UI.ask("What would you like to call your theme?").to_s.strip
-        if input.empty?
-          UI.error("Theme name cannot be empty")
-        else
-          break input
+      name =
+        loop do
+          input = UI.ask("What would you like to call your theme?").to_s.strip
+          if input.empty?
+            UI.error("Theme name cannot be empty")
+          else
+            break input
+          end
         end
-      end
 
       is_component = UI.yes?("Is this a component?")
 
       FileUtils.mkdir_p dir
       Dir.chdir dir do
-        author = loop do
-          input = UI.ask("Who is authoring the theme?", default: ENV['USER']).to_s.strip
-          if input.empty?
-            UI.error("Author cannot be empty")
-          else
-            break input
+        author =
+          loop do
+            input = UI.ask("Who is authoring the theme?", default: ENV["USER"]).to_s.strip
+            if input.empty?
+              UI.error("Author cannot be empty")
+            else
+              break input
+            end
           end
-        end
 
         description = UI.ask("How would you describe this theme?").to_s.strip
 
@@ -125,19 +127,19 @@ module DiscourseTheme
           about_template[:color_schemes] = {}
         end
 
-        encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, '_')
+        encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, "_")
 
-        write('about.json', JSON.pretty_generate(about_template))
-        write('HELP', HELP)
-        write('LICENSE', LICENSE.sub("#YEAR", "#{Date.today.year}").sub("#AUTHOR", author))
-        write('.eslintrc', ESLINT_RC)
-        write('.gitignore', GIT_IGNORE)
-        write('.template-lintrc.js', TEMPLATE_LINT_RC)
-        write('package.json', PACKAGE_JSON.sub("#AUTHOR", author))
-        write('settings.yml', SETTINGS_YML)
-        write('common/common.scss', '')
+        write("about.json", JSON.pretty_generate(about_template))
+        write("HELP", HELP)
+        write("LICENSE", LICENSE.sub("#YEAR", "#{Date.today.year}").sub("#AUTHOR", author))
+        write(".eslintrc", ESLINT_RC)
+        write(".gitignore", GIT_IGNORE)
+        write(".template-lintrc.js", TEMPLATE_LINT_RC)
+        write("package.json", PACKAGE_JSON.sub("#AUTHOR", author))
+        write("settings.yml", SETTINGS_YML)
+        write("common/common.scss", "")
         write("javascripts/discourse/api-initializers/#{encoded_name}.js", API_INITIALIZER)
-        write('locales/en.yml', EN_YML.sub("#DESCRIPTION", description))
+        write("locales/en.yml", EN_YML.sub("#DESCRIPTION", description))
 
         UI.info "Initializing git repo"
         puts `git init && git symbolic-ref HEAD refs/heads/main`

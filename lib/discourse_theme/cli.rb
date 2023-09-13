@@ -38,7 +38,9 @@ module DiscourseTheme
       components = settings.components
 
       if command == "new"
-        raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty" if Dir.exist?(dir) && !Dir.empty?(dir)
+        if Dir.exist?(dir) && !Dir.empty?(dir)
+          raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty"
+        end
         raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
         raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
 
@@ -57,18 +59,23 @@ module DiscourseTheme
         options["Create and sync with a new theme"] = :create
         options["Select a different theme"] = :select
 
-        choice = UI.select('How would you like to sync this theme?', options.keys)
+        choice = UI.select("How would you like to sync this theme?", options.keys)
 
         if options[choice] == :create
           theme_id = nil
         elsif options[choice] == :select
           themes = render_theme_list(theme_list)
-          choice = UI.select('Which theme would you like to sync with?', themes)
+          choice = UI.select("Which theme would you like to sync with?", themes)
           theme_id = extract_theme_id(choice)
           theme = theme_list.find { |t| t["id"] == theme_id }
         end
 
-        about_json = JSON.parse(File.read(File.join(dir, 'about.json'))) rescue nil
+        about_json =
+          begin
+            JSON.parse(File.read(File.join(dir, "about.json")))
+          rescue StandardError
+            nil
+          end
         already_uploaded = !!theme
         is_component = theme&.[]("component")
         component_count = about_json&.[]("components")&.length || 0
@@ -78,11 +85,17 @@ module DiscourseTheme
           options["Yes"] = :sync
           options["No"] = :none
           options = options.sort_by { |_, b| b == components.to_sym ? 0 : 1 }.to_h if components
-          choice = UI.select('Would you like to update child theme components?', options.keys)
+          choice = UI.select("Would you like to update child theme components?", options.keys)
           settings.components = components = options[choice].to_s
         end
 
-        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id, components: components)
+        uploader =
+          DiscourseTheme::Uploader.new(
+            dir: dir,
+            client: client,
+            theme_id: theme_id,
+            components: components,
+          )
 
         UI.progress "Uploading theme from #{dir}"
         settings.theme_id = theme_id = uploader.upload_full_theme
@@ -111,7 +124,7 @@ module DiscourseTheme
         UI.progress "Loading theme list..."
         themes = render_theme_list(client.get_themes_list)
 
-        choice = UI.select('Which theme would you like to download?', themes)
+        choice = UI.select("Which theme would you like to download?", themes)
         theme_id = extract_theme_id(choice)
 
         UI.progress "Downloading theme into #{dir}"
@@ -124,15 +137,25 @@ module DiscourseTheme
         watch_theme?(args)
       elsif command == "upload"
         raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
-        raise DiscourseTheme::ThemeError.new "No theme_id is set, please sync via the 'watch' command initially" if theme_id == 0
+        if theme_id == 0
+          raise DiscourseTheme::ThemeError.new "No theme_id is set, please sync via the 'watch' command initially"
+        end
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
 
         theme_list = client.get_themes_list
 
         theme = theme_list.find { |t| t["id"] == theme_id }
-        raise DiscourseTheme::ThemeError.new "theme_id is set, but the theme does not exist in Discourse" unless theme
+        unless theme
+          raise DiscourseTheme::ThemeError.new "theme_id is set, but the theme does not exist in Discourse"
+        end
 
-        uploader = DiscourseTheme::Uploader.new(dir: dir, client: client, theme_id: theme_id, components: components)
+        uploader =
+          DiscourseTheme::Uploader.new(
+            dir: dir,
+            client: client,
+            theme_id: theme_id,
+            components: components,
+          )
 
         UI.progress "Uploading theme (id:#{theme_id}) from #{dir} "
         settings.theme_id = theme_id = uploader.upload_full_theme
@@ -158,13 +181,15 @@ module DiscourseTheme
     private
 
     def command?(cmd)
-      exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
-      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
-        exts.each do |ext|
-          exe = File.join(path, "#{cmd}#{ext}")
-          return true if File.executable?(exe) && !File.directory?(exe)
+      exts = ENV["PATHEXT"] ? ENV["PATHEXT"].split(";") : [""]
+      ENV["PATH"]
+        .split(File::PATH_SEPARATOR)
+        .each do |path|
+          exts.each do |ext|
+            exe = File.join(path, "#{cmd}#{ext}")
+            return true if File.executable?(exe) && !File.directory?(exe)
+          end
         end
-      end
 
       false
     end
@@ -172,14 +197,16 @@ module DiscourseTheme
     def watch_theme?(args)
       if UI.yes?("Would you like to start 'watching' this theme?")
         args[0] = "watch"
-        UI.progress "Running discourse_theme #{args.join(' ')}"
+        UI.progress "Running discourse_theme #{args.join(" ")}"
         run(args)
       end
     end
 
     def render_theme_list(themes)
-      themes.sort_by { |t| t["updated_at"] }
-        .reverse.map { |theme| "#{theme["name"]} (id:#{theme["id"]})" }
+      themes
+        .sort_by { |t| t["updated_at"] }
+        .reverse
+        .map { |theme| "#{theme["name"]} (id:#{theme["id"]})" }
     end
 
     def extract_theme_id(rendered_name)
