@@ -331,7 +331,7 @@ class TestCli < Minitest::Test
 
       cli.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rake docker:test:setup",
+          "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rake docker:test:setup",
         message: "Setting up Discourse test environment...",
         stream: verbose,
       )

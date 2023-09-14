@@ -251,7 +251,7 @@ module DiscourseTheme
 
           execute(
             command:
-              "docker exec -u discourse:discourse #{container_name} bundle exec rake docker:test:setup",
+              "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{container_name} bundle exec rake docker:test:setup",
             message: "Setting up Discourse test environment...",
             stream: verbose,
           )
