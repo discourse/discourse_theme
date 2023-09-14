@@ -307,7 +307,6 @@ module DiscourseTheme
     def execute(command:, message: nil, exit_on_error: true, stream: false)
       UI.progress(message) if message
 
-      # stdout, stderr, status = Open3.capture3(command)
       success = false
       output = +""
 
