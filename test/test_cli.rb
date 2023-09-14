@@ -282,7 +282,7 @@ class TestCli < Minitest::Test
       .expects(:execute)
       .with(
         command:
-          "docker ps -a --format '{{json .}}' | grep #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME}",
+          "docker ps -a --filter name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} --format '{{json .}}'",
       )
       .returns(
         (

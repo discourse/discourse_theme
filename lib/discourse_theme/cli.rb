@@ -201,7 +201,9 @@ module DiscourseTheme
 
         if !(
              output =
-               execute(command: "docker ps -a --format '{{json .}}' | grep #{container_name}")
+               execute(
+                 command: "docker ps -a --filter name=#{container_name} --format '{{json .}}'",
+               )
            ).empty?
           container_exists = true
           is_running = JSON.parse(output)["State"] == "running"
