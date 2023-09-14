@@ -345,7 +345,20 @@ class TestCli < Minitest::Test
     end
 
     if headless
-      DiscourseTheme::WebDriver.expects(:start).with(browser: :chrome)
+      fake_ip = "123.456.789"
+
+      cli
+        .expects(:execute)
+        .with(
+          command:
+            "docker inspect #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} --format '{{.NetworkSettings.IPAddress}}'",
+        )
+        .returns(fake_ip)
+
+      DiscourseTheme::WebDriver.expects(:start_chrome).with(
+        allowed_ip: fake_ip,
+        allowed_origin: "host.docker.internal",
+      )
 
       cli.expects(:execute).with(
         command:

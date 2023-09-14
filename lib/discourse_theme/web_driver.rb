@@ -4,17 +4,12 @@ require "selenium-webdriver"
 
 module DiscourseTheme
   class WebDriver
-    def self.start(browser: :chrome)
-      case browser
-      when :chrome
-        service = Selenium::WebDriver::Service.chrome
-        options = Selenium::WebDriver::Options.chrome
-        service.executable_path = Selenium::WebDriver::DriverFinder.path(options, service.class)
-        service.args = %w[--whitelisted-ips --allowed-origins=*]
-        service.launch
-      else
-        raise "Unsupported browser: #{browser}"
-      end
+    def self.start_chrome(allowed_ip:, allowed_origin:)
+      service = Selenium::WebDriver::Service.chrome
+      options = Selenium::WebDriver::Options.chrome
+      service.executable_path = Selenium::WebDriver::DriverFinder.path(options, service.class)
+      service.args = ["--allowed-ips=#{allowed_ip}", "--allowed-origins=#{allowed_origin}"]
+      service.launch
     end
   end
 end

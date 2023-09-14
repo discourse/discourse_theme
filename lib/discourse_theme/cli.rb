@@ -266,7 +266,12 @@ module DiscourseTheme
         rspec_envs = []
 
         if headless
-          WebDriver.start(browser: :chrome)
+          container_ip =
+            execute(
+              command: "docker inspect #{container_name} --format '{{.NetworkSettings.IPAddress}}'",
+            )
+
+          WebDriver.start_chrome(allowed_origin: "host.docker.internal", allowed_ip: container_ip)
 
           rspec_envs.push("SELENIUM_HEADLESS=0")
           rspec_envs.push("CAPYBARA_SERVER_HOST=0.0.0.0")
