@@ -268,7 +268,7 @@ module DiscourseTheme
 
         execute(
           command:
-            "docker exec #{rspec_envs} -u discourse:discourse #{container_name} bundle exec rspec --color --tty #{File.join("/tmp", basename, spec_path)}".squeeze(
+            "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{File.join("/tmp", basename, spec_path)}".squeeze(
               " ",
             ),
           stream: true,

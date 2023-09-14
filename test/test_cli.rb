@@ -346,13 +346,13 @@ class TestCli < Minitest::Test
 
       cli.expects(:execute).with(
         command:
-          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec --color --tty #{@dir}#{rspec_path}",
+          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@dir}#{rspec_path}",
         stream: true,
       )
     else
       cli.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec --color --tty #{@dir}#{rspec_path}",
+          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@dir}#{rspec_path}",
         stream: true,
       )
     end
