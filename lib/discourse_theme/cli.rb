@@ -7,6 +7,7 @@ require_relative "web_driver"
 module DiscourseTheme
   class Cli
     DISCOURSE_TEST_DOCKER_CONTAINER_NAME = "discourse_theme_test"
+    DISCOURSE_THEME_TEST_TMP_DIR = "/tmp/.discourse_theme_test"
 
     @@cli_settings_filename = File.expand_path("~/.discourse_theme")
 
@@ -184,15 +185,23 @@ module DiscourseTheme
           UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
         end
       elsif command == "rspec"
-        index = dir.index("/spec")
         spec_path = "/spec"
+        index = dir.index(spec_path)
 
         if index
           spec_path = dir[index..-1]
           dir = dir[0..index - 1]
         end
 
-        raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
+        spec_directory = File.join(dir, "/spec")
+
+        unless Dir.exist?(spec_directory)
+          raise DiscourseTheme::ThemeError.new "'#{spec_directory} does not exist"
+        end
+
+        unless Dir.exist?(DISCOURSE_THEME_TEST_TMP_DIR)
+          FileUtils.mkdir_p DISCOURSE_THEME_TEST_TMP_DIR
+        end
 
         # Checks if the container is running
         container_name = DISCOURSE_TEST_DOCKER_CONTAINER_NAME
@@ -226,7 +235,7 @@ module DiscourseTheme
                 --add-host host.docker.internal:host-gateway \
                 --entrypoint=/sbin/boot \
                 --name=#{container_name} \
-                -v #{dir}:/tmp/#{basename} \
+                -v #{DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
                 discourse/discourse_test:release
             CMD
             message: "Creating discourse/discourse_test:release Docker container...",
@@ -266,13 +275,22 @@ module DiscourseTheme
 
         rspec_envs = rspec_envs.map { |env| "-e #{env}" }.join(" ")
 
-        execute(
-          command:
-            "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{File.join("/tmp", basename, spec_path)}".squeeze(
-              " ",
-            ),
-          stream: true,
-        )
+        begin
+          theme_spec_directory = File.join(dir, "/spec")
+          tmp_theme_directory = File.join(DISCOURSE_THEME_TEST_TMP_DIR, basename)
+          FileUtils.mkdir_p(tmp_theme_directory) if !Dir.exist?(tmp_theme_directory)
+          FileUtils.cp_r(theme_spec_directory, File.join(tmp_theme_directory))
+
+          execute(
+            command:
+              "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{File.join("/tmp", basename, spec_path)}".squeeze(
+                " ",
+              ),
+            stream: true,
+          )
+        ensure
+          FileUtils.rm_rf(File.join(tmp_theme_directory, "/spec"))
+        end
       else
         usage
       end

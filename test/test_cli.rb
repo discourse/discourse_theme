@@ -6,6 +6,8 @@ class TestCli < Minitest::Test
   def setup
     WebMock.reset!
     @dir = Dir.mktmpdir
+    @spec_dir = Dir.mktmpdir
+    FileUtils.mkdir_p(File.join(@spec_dir, "/spec"))
 
     @root_stub =
       stub_request(:get, "http://my.forum.com").to_return(status: 200, body: "", headers: {})
@@ -49,6 +51,7 @@ class TestCli < Minitest::Test
 
   def teardown
     FileUtils.remove_dir(@dir)
+    FileUtils.remove_dir(@spec_dir)
   end
 
   def suppress_output
@@ -312,7 +315,7 @@ class TestCli < Minitest::Test
             --add-host host.docker.internal:host-gateway \
             --entrypoint=/sbin/boot \
             --name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} \
-            -v #{@dir}:#{@dir} \
+            -v #{DiscourseTheme::Cli::DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
             discourse/discourse_test:release
         COMMAND
         message: "Creating discourse/discourse_test:release Docker container...",
@@ -346,20 +349,20 @@ class TestCli < Minitest::Test
 
       cli.expects(:execute).with(
         command:
-          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@dir}#{rspec_path}",
+          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     else
       cli.expects(:execute).with(
         command:
-          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@dir}#{rspec_path}",
+          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     end
   end
 
   def test_rspec
-    args = ["rspec", @dir]
+    args = ["rspec", @spec_dir]
 
     cli = DiscourseTheme::Cli.new
     mock_rspec_docker_commands(cli, verbose: false, setup_commands: true)
@@ -367,8 +370,18 @@ class TestCli < Minitest::Test
     suppress_output { cli.run(args) }
   end
 
+  def test_rspec_directory_without_spec_folder
+    args = ["rspec", @spec_dir]
+    FileUtils.rm_rf(File.join(@spec_dir, "/spec"))
+
+    cli = DiscourseTheme::Cli.new
+    cli.expects(:execute).never
+
+    suppress_output { cli.run(args) }
+  end
+
   def test_rspec_with_headless_option
-    args = ["rspec", @dir, "--headless"]
+    args = ["rspec", @spec_dir, "--headless"]
 
     cli = DiscourseTheme::Cli.new
     mock_rspec_docker_commands(cli, verbose: false, setup_commands: true, headless: true)
@@ -377,7 +390,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_verbose_option
-    args = ["rspec", @dir, "--verbose"]
+    args = ["rspec", @spec_dir, "--verbose"]
 
     cli = DiscourseTheme::Cli.new
     mock_rspec_docker_commands(cli, verbose: true, setup_commands: true)
@@ -386,7 +399,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_rebuild_option
-    args = ["rspec", @dir, "--rebuild"]
+    args = ["rspec", @spec_dir, "--rebuild"]
 
     cli = DiscourseTheme::Cli.new
 
@@ -401,7 +414,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_when_docker_container_is_already_running
-    args = ["rspec", @dir]
+    args = ["rspec", @spec_dir]
 
     cli = DiscourseTheme::Cli.new
 
@@ -416,7 +429,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_dir_path_to_rspec_folder
-    args = ["rspec", File.join(@dir, "/spec")]
+    args = ["rspec", File.join(@spec_dir, "/spec")]
 
     cli = DiscourseTheme::Cli.new
 
@@ -431,7 +444,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_dir_path_to_custom_rspec_folder
-    args = ["rspec", File.join(@dir, "/spec/system")]
+    args = ["rspec", File.join(@spec_dir, "/spec/system")]
 
     cli = DiscourseTheme::Cli.new
 
@@ -447,7 +460,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_dir_path_to_rspec_file
-    args = ["rspec", File.join(@dir, "/spec/system/some_test_rspec.rb")]
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_test_rspec.rb")]
 
     cli = DiscourseTheme::Cli.new
 
@@ -463,7 +476,7 @@ class TestCli < Minitest::Test
   end
 
   def test_rspec_with_dir_path_to_rspec_file_with_line_number
-    args = ["rspec", File.join(@dir, "/spec/system/some_test_rspec.rb:3")]
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_test_rspec.rb:3")]
 
     cli = DiscourseTheme::Cli.new
 
