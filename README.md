@@ -36,6 +36,15 @@ Monitors a theme or component for changes. When changed the program will synchro
 
 Uploads a theme to the server. Requires the theme to have been previously synchronized via `watch`.
 
+### `discourse_theme rspec PATH`
+
+Runs the [RSpec](https://rspec.info/) system tests under the `spec` folder for the theme.
+
+Requires [Docker](https://docs.docker.com/engine/install/) to be installed as the tests are ran in a Docker container with
+the Discourse test environment configured.
+
+When the `--headless` option is used, a local installation of the [Google Chrome browser](https://www.google.com/chrome/) is required.
+
 ## Contributing
 
 Bug reports and pull requests are welcome at [Meta Discourse](https://meta.discourse.org). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
