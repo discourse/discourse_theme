@@ -6,8 +6,12 @@ require_relative "web_driver"
 
 module DiscourseTheme
   class Cli
-    DISCOURSE_TEST_DOCKER_CONTAINER_NAME = "discourse_theme_test"
+    DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX = "discourse_theme_test"
     DISCOURSE_THEME_TEST_TMP_DIR = "/tmp/.discourse_theme_test"
+
+    def self.discourse_test_docker_container_name
+      "#{DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}_#{DiscourseTheme::VERSION}"
+    end
 
     @@cli_settings_filename = File.expand_path("~/.discourse_theme")
 
@@ -204,9 +208,8 @@ module DiscourseTheme
         end
 
         # Checks if the container is running
-        container_name = DISCOURSE_TEST_DOCKER_CONTAINER_NAME
+        container_name = self.class.discourse_test_docker_container_name
         is_running = false
-        container_exists = false
 
         if !(
              output =
@@ -214,7 +217,6 @@ module DiscourseTheme
                  command: "docker ps -a --filter name=#{container_name} --format '{{json .}}'",
                )
            ).empty?
-          container_exists = true
           is_running = JSON.parse(output)["State"] == "running"
         end
 
@@ -223,9 +225,16 @@ module DiscourseTheme
         headless = !!args.delete("--headless")
 
         if !is_running || args.delete("--rebuild")
-          if container_exists
-            execute(command: "docker stop #{container_name}")
-            execute(command: "docker rm -f #{container_name}")
+          # Stop older versions of Docker container
+          existing_docker_container_ids =
+            execute(
+              command:
+                "docker ps -a -q --filter name=#{DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}",
+            ).split("\n").join(" ")
+
+          if !existing_docker_container_ids.empty?
+            execute(command: "docker stop #{existing_docker_container_ids}")
+            execute(command: "docker rm -f #{existing_docker_container_ids}")
           end
 
           image = "discourse/discourse_test:release"

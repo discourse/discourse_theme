@@ -285,12 +285,12 @@ class TestCli < Minitest::Test
       .expects(:execute)
       .with(
         command:
-          "docker ps -a --filter name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} --format '{{json .}}'",
+          "docker ps -a --filter name=#{DiscourseTheme::Cli.discourse_test_docker_container_name} --format '{{json .}}'",
       )
       .returns(
         (
           if container_state
-            %({"Names":"#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME}","State":"#{container_state}"})
+            %({"Names":"#{DiscourseTheme::Cli.discourse_test_docker_container_name}","State":"#{container_state}"})
           else
             ""
           end
@@ -298,15 +298,16 @@ class TestCli < Minitest::Test
       )
 
     if setup_commands
-      if container_state
-        cli.expects(:execute).with(
-          command: "docker stop #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME}",
+      cli
+        .expects(:execute)
+        .with(
+          command:
+            "docker ps -a -q --filter name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}",
         )
+        .returns("12345\n678910")
 
-        cli.expects(:execute).with(
-          command: "docker rm -f #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME}",
-        )
-      end
+      cli.expects(:execute).with(command: "docker stop 12345 678910")
+      cli.expects(:execute).with(command: "docker rm -f 12345 678910")
 
       cli.expects(:execute).with(
         command: <<~COMMAND.squeeze(" "),
@@ -314,7 +315,7 @@ class TestCli < Minitest::Test
             -p 31337:31337 \
             --add-host host.docker.internal:host-gateway \
             --entrypoint=/sbin/boot \
-            --name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} \
+            --name=#{DiscourseTheme::Cli.discourse_test_docker_container_name} \
             --pull=always \
             -v #{DiscourseTheme::Cli::DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
             discourse/discourse_test:release
@@ -325,21 +326,21 @@ class TestCli < Minitest::Test
 
       cli.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} ruby script/docker_test.rb --no-tests --checkout-ref origin/tests-passed",
+          "docker exec -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} ruby script/docker_test.rb --no-tests --checkout-ref origin/tests-passed",
         message: "Checking out latest Discourse source code...",
         stream: verbose,
       )
 
       cli.expects(:execute).with(
         command:
-          "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rake docker:test:setup",
+          "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rake docker:test:setup",
         message: "Setting up Discourse test environment...",
         stream: verbose,
       )
 
       cli.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bin/ember-cli --build",
+          "docker exec -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bin/ember-cli --build",
         message: "Building Ember CLI assets...",
         stream: verbose,
       )
@@ -352,7 +353,7 @@ class TestCli < Minitest::Test
         .expects(:execute)
         .with(
           command:
-            "docker inspect #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} --format '{{.NetworkSettings.IPAddress}}'",
+            "docker inspect #{DiscourseTheme::Cli.discourse_test_docker_container_name} --format '{{.NetworkSettings.IPAddress}}'",
         )
         .returns(fake_ip)
 
@@ -363,13 +364,13 @@ class TestCli < Minitest::Test
 
       cli.expects(:execute).with(
         command:
-          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@spec_dir}#{rspec_path}",
+          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     else
       cli.expects(:execute).with(
         command:
-          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} bundle exec rspec #{@spec_dir}#{rspec_path}",
+          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     end
