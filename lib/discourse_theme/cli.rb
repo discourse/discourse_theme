@@ -228,6 +228,8 @@ module DiscourseTheme
             execute(command: "docker rm -f #{container_name}")
           end
 
+          image = "discourse/discourse_test:release"
+
           execute(
             command: <<~CMD.squeeze(" "),
               docker run -d \
@@ -235,10 +237,11 @@ module DiscourseTheme
                 --add-host host.docker.internal:host-gateway \
                 --entrypoint=/sbin/boot \
                 --name=#{container_name} \
+                --pull=always \
                 -v #{DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
-                discourse/discourse_test:release
+                #{image}
             CMD
-            message: "Creating discourse/discourse_test:release Docker container...",
+            message: "Creating #{image} Docker container...",
             stream: verbose,
           )
 

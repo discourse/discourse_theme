@@ -315,6 +315,7 @@ class TestCli < Minitest::Test
             --add-host host.docker.internal:host-gateway \
             --entrypoint=/sbin/boot \
             --name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME} \
+            --pull=always \
             -v #{DiscourseTheme::Cli::DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
             discourse/discourse_test:release
         COMMAND
