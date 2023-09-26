@@ -8,6 +8,9 @@ class TestCli < Minitest::Test
     @dir = Dir.mktmpdir
     @spec_dir = Dir.mktmpdir
     FileUtils.mkdir_p(File.join(@spec_dir, "/spec"))
+    @discourse_dir = Dir.mktmpdir
+    FileUtils.mkdir_p(File.join(@discourse_dir, "/lib"))
+    File.new(File.join(@discourse_dir, "lib/discourse.rb"), "w")
 
     @root_stub =
       stub_request(:get, "http://my.forum.com").to_return(status: 200, body: "", headers: {})
@@ -50,8 +53,27 @@ class TestCli < Minitest::Test
   DiscourseTheme::Cli.settings_file = Tempfile.new("settings")
 
   def teardown
-    FileUtils.remove_dir(@dir)
-    FileUtils.remove_dir(@spec_dir)
+    [@dir, @spec_dir, @discourse_dir].each { |dir| FileUtils.remove_dir(dir) }
+  end
+
+  def capture_output(output_name)
+    previous_output = output_name == :stdout ? $stdout : $stderr
+
+    io = StringIO.new
+    output_name == :stdout ? $stdout = io : $stderr = io
+
+    yield
+    io.string
+  ensure
+    output_name == :stdout ? $stdout = previous_output : $stderr = previous_output
+  end
+
+  def capture_stdout(&block)
+    capture_output(:stdout, &block)
+  end
+
+  def capture_stderr(&block)
+    capture_output(:stderr, &block)
   end
 
   def suppress_output
@@ -388,9 +410,20 @@ class TestCli < Minitest::Test
     DiscourseTheme::UI.stub(:yes?, false) { suppress_output { cli.run(args) } }
   end
 
-  def run_cli_rspec_with_local_discourse_repository(cli, args, local_discourse_directory)
+  def run_cli_rspec_with_local_discourse_repository(
+    cli,
+    args,
+    local_discourse_directory,
+    suppress_output: true
+  )
     DiscourseTheme::UI.stub(:ask, local_discourse_directory) do
-      DiscourseTheme::UI.stub(:yes?, true) { suppress_output { cli.run(args) } }
+      DiscourseTheme::UI.stub(:yes?, true) do
+        if suppress_output
+          suppress_output { cli.run(args) }
+        else
+          cli.run(args)
+        end
+      end
     end
   end
 
@@ -399,8 +432,8 @@ class TestCli < Minitest::Test
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_local_discourse_commands(@dir, @spec_dir)
-    run_cli_rspec_with_local_discourse_repository(cli, args, @dir)
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir)
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
   end
 
   def test_rspec_using_local_discourse_repository_with_headless_option
@@ -408,8 +441,39 @@ class TestCli < Minitest::Test
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_local_discourse_commands(@dir, @spec_dir, headless: true)
-    run_cli_rspec_with_local_discourse_repository(cli, args, @dir)
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir, headless: true)
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+  end
+
+  def test_rspec_using_local_discourse_repository_with_non_existence_directory
+    args = ["rspec", @spec_dir]
+
+    cli = DiscourseTheme::Cli.new
+
+    output =
+      capture_stdout do
+        run_cli_rspec_with_local_discourse_repository(
+          cli,
+          args,
+          "/non/existence/directory",
+          suppress_output: false,
+        )
+      end
+
+    assert_match("/non/existence/directory does not exist", output)
+  end
+
+  def test_rspec_using_local_discourse_repository_with_directory_that_is_not_a_discourse_respository
+    args = ["rspec", @spec_dir]
+
+    cli = DiscourseTheme::Cli.new
+
+    output =
+      capture_stdout do
+        run_cli_rspec_with_local_discourse_repository(cli, args, @dir, suppress_output: false)
+      end
+
+    assert_match("#{@dir} is not a Discourse repository", output)
   end
 
   def test_rspec_using_docker

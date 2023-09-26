@@ -223,6 +223,10 @@ module DiscourseTheme
               raise DiscourseTheme::ThemeError.new "'#{local_discourse_directory} does not exist"
             end
 
+            unless File.exist?("#{local_discourse_directory}/lib/discourse.rb")
+              raise DiscourseTheme::ThemeError.new "'#{local_discourse_directory} is not a Discourse repository"
+            end
+
             settings.local_discourse_directory = local_discourse_directory
           else
             settings.local_discourse_directory = ""
