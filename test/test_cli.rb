@@ -8,6 +8,9 @@ class TestCli < Minitest::Test
     @dir = Dir.mktmpdir
     @spec_dir = Dir.mktmpdir
     FileUtils.mkdir_p(File.join(@spec_dir, "/spec"))
+    @discourse_dir = Dir.mktmpdir
+    FileUtils.mkdir_p(File.join(@discourse_dir, "/lib"))
+    File.new(File.join(@discourse_dir, "lib/discourse.rb"), "w")
 
     @root_stub =
       stub_request(:get, "http://my.forum.com").to_return(status: 200, body: "", headers: {})
@@ -50,8 +53,27 @@ class TestCli < Minitest::Test
   DiscourseTheme::Cli.settings_file = Tempfile.new("settings")
 
   def teardown
-    FileUtils.remove_dir(@dir)
-    FileUtils.remove_dir(@spec_dir)
+    [@dir, @spec_dir, @discourse_dir].each { |dir| FileUtils.remove_dir(dir) }
+  end
+
+  def capture_output(output_name)
+    previous_output = output_name == :stdout ? $stdout : $stderr
+
+    io = StringIO.new
+    output_name == :stdout ? $stdout = io : $stderr = io
+
+    yield
+    io.string
+  ensure
+    output_name == :stdout ? $stdout = previous_output : $stderr = previous_output
+  end
+
+  def capture_stdout(&block)
+    capture_output(:stdout, &block)
+  end
+
+  def capture_stderr(&block)
+    capture_output(:stderr, &block)
   end
 
   def suppress_output
@@ -273,24 +295,30 @@ class TestCli < Minitest::Test
     end
   end
 
+  def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: false)
+    Kernel.expects(:exec).with(
+      anything,
+      "cd #{dir} && #{headless ? DiscourseTheme::CliCommands::Rspec::SELENIUM_HEADLESS_ENV : ""} bundle exec rspec #{File.join(spec_dir, rspec_path)}",
+    )
+  end
+
   def mock_rspec_docker_commands(
-    cli,
     verbose:,
     setup_commands:,
     rspec_path: "/spec",
     container_state: nil,
     headless: false
   )
-    cli
+    DiscourseTheme::CliCommands::Rspec
       .expects(:execute)
       .with(
         command:
-          "docker ps -a --filter name=#{DiscourseTheme::Cli.discourse_test_docker_container_name} --format '{{json .}}'",
+          "docker ps -a --filter name=#{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} --format '{{json .}}'",
       )
       .returns(
         (
           if container_state
-            %({"Names":"#{DiscourseTheme::Cli.discourse_test_docker_container_name}","State":"#{container_state}"})
+            %({"Names":"#{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name}","State":"#{container_state}"})
           else
             ""
           end
@@ -298,49 +326,51 @@ class TestCli < Minitest::Test
       )
 
     if setup_commands
-      cli
+      DiscourseTheme::CliCommands::Rspec
         .expects(:execute)
         .with(
           command:
-            "docker ps -a -q --filter name=#{DiscourseTheme::Cli::DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}",
+            "docker ps -a -q --filter name=#{DiscourseTheme::CliCommands::Rspec::DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}",
         )
         .returns("12345\n678910")
 
-      cli.expects(:execute).with(command: "docker stop 12345 678910")
-      cli.expects(:execute).with(command: "docker rm -f 12345 678910")
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(command: "docker stop 12345 678910")
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
+        command: "docker rm -f 12345 678910",
+      )
 
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command: <<~COMMAND.squeeze(" "),
           docker run -d \
             -p 31337:31337 \
             --add-host host.docker.internal:host-gateway \
             --entrypoint=/sbin/boot \
-            --name=#{DiscourseTheme::Cli.discourse_test_docker_container_name} \
+            --name=#{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} \
             --pull=always \
-            -v #{DiscourseTheme::Cli::DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
+            -v #{DiscourseTheme::CliCommands::Rspec::DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
             discourse/discourse_test:release
         COMMAND
         message: "Creating discourse/discourse_test:release Docker container...",
         stream: verbose,
       )
 
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} ruby script/docker_test.rb --no-tests --checkout-ref origin/tests-passed",
+          "docker exec -u discourse:discourse #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} ruby script/docker_test.rb --no-tests --checkout-ref origin/tests-passed",
         message: "Checking out latest Discourse source code...",
         stream: verbose,
       )
 
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command:
-          "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rake docker:test:setup",
+          "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} bundle exec rake docker:test:setup",
         message: "Setting up Discourse test environment...",
         stream: verbose,
       )
 
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command:
-          "docker exec -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bin/ember-cli --build",
+          "docker exec -u discourse:discourse #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} bin/ember-cli --build",
         message: "Building Ember CLI assets...",
         stream: verbose,
       )
@@ -349,160 +379,212 @@ class TestCli < Minitest::Test
     if headless
       fake_ip = "123.456.789"
 
-      cli
+      DiscourseTheme::CliCommands::Rspec
         .expects(:execute)
         .with(
           command:
-            "docker inspect #{DiscourseTheme::Cli.discourse_test_docker_container_name} --format '{{.NetworkSettings.IPAddress}}'",
+            "docker inspect #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} --format '{{.NetworkSettings.IPAddress}}'",
         )
         .returns(fake_ip)
 
-      DiscourseTheme::WebDriver.expects(:start_chrome).with(
-        allowed_ip: fake_ip,
-        allowed_origin: "host.docker.internal",
-      )
+      DiscourseTheme::CliCommands::Rspec
+        .expects(:start_chromedriver)
+        .with(allowed_ip: fake_ip, allowed_origin: "host.docker.internal")
+        .returns(mock(uri: URI("http://localhost:9515")))
 
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command:
-          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
+          "docker exec -e SELENIUM_HEADLESS=0 -e CAPYBARA_SERVER_HOST=0.0.0.0 -e CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515 -t -u discourse:discourse #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     else
-      cli.expects(:execute).with(
+      DiscourseTheme::CliCommands::Rspec.expects(:execute).with(
         command:
-          "docker exec -t -u discourse:discourse #{DiscourseTheme::Cli.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
+          "docker exec -t -u discourse:discourse #{DiscourseTheme::CliCommands::Rspec.discourse_test_docker_container_name} bundle exec rspec #{@spec_dir}#{rspec_path}",
         stream: true,
       )
     end
   end
 
-  def test_rspec
+  def run_cli_rspec_with_docker(cli, args)
+    DiscourseTheme::UI.stub(:yes?, false) { suppress_output { cli.run(args) } }
+  end
+
+  def run_cli_rspec_with_local_discourse_repository(
+    cli,
+    args,
+    local_discourse_directory,
+    suppress_output: true
+  )
+    DiscourseTheme::UI.stub(:ask, local_discourse_directory) do
+      DiscourseTheme::UI.stub(:yes?, true) do
+        if suppress_output
+          suppress_output { cli.run(args) }
+        else
+          cli.run(args)
+        end
+      end
+    end
+  end
+
+  def test_rspec_using_local_discourse_repository
     args = ["rspec", @spec_dir]
 
     cli = DiscourseTheme::Cli.new
-    mock_rspec_docker_commands(cli, verbose: false, setup_commands: true)
 
-    suppress_output { cli.run(args) }
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir)
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
   end
 
-  def test_rspec_directory_without_spec_folder
+  def test_rspec_using_local_discourse_repository_with_headless_option
+    args = ["rspec", @spec_dir, "--headless"]
+
+    cli = DiscourseTheme::Cli.new
+
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir, headless: true)
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+  end
+
+  def test_rspec_using_local_discourse_repository_with_non_existence_directory
+    args = ["rspec", @spec_dir]
+
+    cli = DiscourseTheme::Cli.new
+
+    output =
+      capture_stdout do
+        run_cli_rspec_with_local_discourse_repository(
+          cli,
+          args,
+          "/non/existence/directory",
+          suppress_output: false,
+        )
+      end
+
+    assert_match("/non/existence/directory does not exist", output)
+  end
+
+  def test_rspec_using_local_discourse_repository_with_directory_that_is_not_a_discourse_respository
+    args = ["rspec", @spec_dir]
+
+    cli = DiscourseTheme::Cli.new
+
+    output =
+      capture_stdout do
+        run_cli_rspec_with_local_discourse_repository(cli, args, @dir, suppress_output: false)
+      end
+
+    assert_match("#{@dir} is not a Discourse repository", output)
+  end
+
+  def test_rspec_using_docker
+    args = ["rspec", @spec_dir]
+
+    cli = DiscourseTheme::Cli.new
+    mock_rspec_docker_commands(verbose: false, setup_commands: true)
+
+    run_cli_rspec_with_docker(cli, args)
+  end
+
+  def test_rspec_using_docker_directory_without_spec_folder
     args = ["rspec", @spec_dir]
     FileUtils.rm_rf(File.join(@spec_dir, "/spec"))
 
     cli = DiscourseTheme::Cli.new
     cli.expects(:execute).never
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_headless_option
+  def test_rspec_using_docker_with_headless_option
     args = ["rspec", @spec_dir, "--headless"]
 
     cli = DiscourseTheme::Cli.new
-    mock_rspec_docker_commands(cli, verbose: false, setup_commands: true, headless: true)
+    mock_rspec_docker_commands(verbose: false, setup_commands: true, headless: true)
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_verbose_option
+  def test_rspec_using_docker_with_verbose_option
     args = ["rspec", @spec_dir, "--verbose"]
 
     cli = DiscourseTheme::Cli.new
-    mock_rspec_docker_commands(cli, verbose: true, setup_commands: true)
+    mock_rspec_docker_commands(verbose: true, setup_commands: true)
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_rebuild_option
+  def test_rspec_using_docker_with_rebuild_option
     args = ["rspec", @spec_dir, "--rebuild"]
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_docker_commands(
-      cli,
-      verbose: false,
-      setup_commands: true,
-      container_state: "running",
-    )
+    mock_rspec_docker_commands(verbose: false, setup_commands: true, container_state: "running")
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_when_docker_container_is_already_running
+  def test_rspec_using_docker_when_docker_container_is_already_running
     args = ["rspec", @spec_dir]
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_docker_commands(
-      cli,
-      verbose: false,
-      setup_commands: false,
-      container_state: "running",
-    )
+    mock_rspec_docker_commands(verbose: false, setup_commands: false, container_state: "running")
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_dir_path_to_rspec_folder
+  def test_rspec_using_docker_with_dir_path_to_rspec_folder
     args = ["rspec", File.join(@spec_dir, "/spec")]
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_docker_commands(
-      cli,
-      verbose: false,
-      setup_commands: false,
-      container_state: "running",
-    )
+    mock_rspec_docker_commands(verbose: false, setup_commands: false, container_state: "running")
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_dir_path_to_custom_rspec_folder
+  def test_rspec_using_docker_with_dir_path_to_custom_rspec_folder
     args = ["rspec", File.join(@spec_dir, "/spec/system")]
 
     cli = DiscourseTheme::Cli.new
 
     mock_rspec_docker_commands(
-      cli,
       verbose: false,
       setup_commands: false,
       rspec_path: "/spec/system",
       container_state: "running",
     )
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_dir_path_to_rspec_file
-    args = ["rspec", File.join(@spec_dir, "/spec/system/some_test_rspec.rb")]
+  def test_rspec_using_docker_with_dir_path_to_rspec_file
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_spec.rb")]
 
     cli = DiscourseTheme::Cli.new
 
     mock_rspec_docker_commands(
-      cli,
       verbose: false,
       setup_commands: false,
-      rspec_path: "/spec/system/some_test_rspec.rb",
+      rspec_path: "/spec/system/some_spec.rb",
       container_state: "running",
     )
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_with_dir_path_to_rspec_file_with_line_number
-    args = ["rspec", File.join(@spec_dir, "/spec/system/some_test_rspec.rb:3")]
+  def test_rspec_using_docker_with_dir_path_to_rspec_file_with_line_number
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_spec.rb:3")]
 
     cli = DiscourseTheme::Cli.new
 
     mock_rspec_docker_commands(
-      cli,
       verbose: false,
       setup_commands: false,
-      rspec_path: "/spec/system/some_test_rspec.rb:3",
+      rspec_path: "/spec/system/some_spec.rb:3",
       container_state: "running",
     )
 
-    suppress_output { cli.run(args) }
+    run_cli_rspec_with_docker(cli, args)
   end
 end

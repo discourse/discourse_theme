@@ -1,18 +1,8 @@
 # frozen_string_literal: true
 
-require "open3"
-require "pathname"
-require_relative "web_driver"
-
+require_relative "cli_commands/rspec"
 module DiscourseTheme
   class Cli
-    DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX = "discourse_theme_test"
-    DISCOURSE_THEME_TEST_TMP_DIR = "/tmp/.discourse_theme_test"
-
-    def self.discourse_test_docker_container_name
-      "#{DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}_#{DiscourseTheme::VERSION}"
-    end
-
     @@cli_settings_filename = File.expand_path("~/.discourse_theme")
 
     def self.settings_file
@@ -32,10 +22,12 @@ module DiscourseTheme
         download DIR          - Downloads a theme from the server and stores it in the specified directory.
         upload DIR            - Uploads the theme from the specified directory to Discourse.
         watch DIR             - Watches the theme in the specified directory and synchronizes any changes with Discourse.
-        rspec DIR [OPTIONS]   - Runs the RSpec tests in the specified directory.
-          --headless          - Runs the RSpec system type tests in headless mode.
-          --rebuild           - Setups the dependencies for the testing again.
-          --verbose           - Runs the command in verbose mode.
+        rspec DIR [OPTIONS]   - Runs the RSpec tests in the specified directory. The tests can be run using a local Discourse repository or a Docker container.
+          --headless          - Runs the RSpec system type tests in headless mode. Applies to both modes.
+
+          If specified directory has been configured to run in a Docker container, the additional options are supported.
+          --rebuild           - Forces a rebuilds of Docker container.
+          --verbose           - Runs the command to prepare the Docker container in verbose mode.
 
       Global Options:
         --reset               - Resets the configuration for the specified directory.
@@ -189,125 +181,12 @@ module DiscourseTheme
           UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
         end
       elsif command == "rspec"
-        spec_path = "/spec"
-        index = dir.index(spec_path)
-
-        if index
-          spec_path = dir[index..-1]
-          dir = dir[0..index - 1]
-        end
-
-        spec_directory = File.join(dir, "/spec")
-
-        unless Dir.exist?(spec_directory)
-          raise DiscourseTheme::ThemeError.new "'#{spec_directory} does not exist"
-        end
-
-        unless Dir.exist?(DISCOURSE_THEME_TEST_TMP_DIR)
-          FileUtils.mkdir_p DISCOURSE_THEME_TEST_TMP_DIR
-        end
-
-        # Checks if the container is running
-        container_name = self.class.discourse_test_docker_container_name
-        is_running = false
-
-        if !(
-             output =
-               execute(
-                 command: "docker ps -a --filter name=#{container_name} --format '{{json .}}'",
-               )
-           ).empty?
-          is_running = JSON.parse(output)["State"] == "running"
-        end
-
-        basename = Pathname.new(dir).basename.to_s
-        verbose = !!args.delete("--verbose")
-        headless = !!args.delete("--headless")
-
-        if !is_running || args.delete("--rebuild")
-          # Stop older versions of Docker container
-          existing_docker_container_ids =
-            execute(
-              command:
-                "docker ps -a -q --filter name=#{DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX}",
-            ).split("\n").join(" ")
-
-          if !existing_docker_container_ids.empty?
-            execute(command: "docker stop #{existing_docker_container_ids}")
-            execute(command: "docker rm -f #{existing_docker_container_ids}")
-          end
-
-          image = "discourse/discourse_test:release"
-
-          execute(
-            command: <<~CMD.squeeze(" "),
-              docker run -d \
-                -p 31337:31337 \
-                --add-host host.docker.internal:host-gateway \
-                --entrypoint=/sbin/boot \
-                --name=#{container_name} \
-                --pull=always \
-                -v #{DISCOURSE_THEME_TEST_TMP_DIR}:/tmp \
-                #{image}
-            CMD
-            message: "Creating #{image} Docker container...",
-            stream: verbose,
-          )
-
-          execute(
-            command:
-              "docker exec -u discourse:discourse #{container_name} ruby script/docker_test.rb --no-tests --checkout-ref origin/tests-passed",
-            message: "Checking out latest Discourse source code...",
-            stream: verbose,
-          )
-
-          execute(
-            command:
-              "docker exec -e SKIP_MULTISITE=1 -u discourse:discourse #{container_name} bundle exec rake docker:test:setup",
-            message: "Setting up Discourse test environment...",
-            stream: verbose,
-          )
-
-          execute(
-            command: "docker exec -u discourse:discourse #{container_name} bin/ember-cli --build",
-            message: "Building Ember CLI assets...",
-            stream: verbose,
-          )
-        end
-
-        rspec_envs = []
-
-        if headless
-          container_ip =
-            execute(
-              command: "docker inspect #{container_name} --format '{{.NetworkSettings.IPAddress}}'",
-            )
-
-          WebDriver.start_chrome(allowed_origin: "host.docker.internal", allowed_ip: container_ip)
-
-          rspec_envs.push("SELENIUM_HEADLESS=0")
-          rspec_envs.push("CAPYBARA_SERVER_HOST=0.0.0.0")
-          rspec_envs.push("CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:9515")
-        end
-
-        rspec_envs = rspec_envs.map { |env| "-e #{env}" }.join(" ")
-
-        begin
-          theme_spec_directory = File.join(dir, "/spec")
-          tmp_theme_directory = File.join(DISCOURSE_THEME_TEST_TMP_DIR, basename)
-          FileUtils.mkdir_p(tmp_theme_directory) if !Dir.exist?(tmp_theme_directory)
-          FileUtils.cp_r(theme_spec_directory, File.join(tmp_theme_directory))
-
-          execute(
-            command:
-              "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{File.join("/tmp", basename, spec_path)}".squeeze(
-                " ",
-              ),
-            stream: true,
-          )
-        ensure
-          FileUtils.rm_rf(File.join(tmp_theme_directory, "/spec"))
-        end
+        DiscourseTheme::CliCommands::Rspec.run(
+          settings: settings,
+          dir: dir,
+          args: args,
+          reset: reset,
+        )
       else
         usage
       end
@@ -320,32 +199,6 @@ module DiscourseTheme
     end
 
     private
-
-    def execute(command:, message: nil, exit_on_error: true, stream: false)
-      UI.progress(message) if message
-
-      success = false
-      output = +""
-
-      Open3.popen2e(command) do |stdin, stdout_and_stderr, wait_thr|
-        Thread.new do
-          stdout_and_stderr.each do |line|
-            puts line if stream
-            output << line
-          end
-        end
-
-        exit_status = wait_thr.value
-        success = exit_status.success?
-
-        unless success
-          UI.error "Error occured while running: `#{command}`:\n\n#{output}" unless stream
-          exit 1 if exit_on_error
-        end
-      end
-
-      output
-    end
 
     def command?(cmd)
       exts = ENV["PATHEXT"] ? ENV["PATHEXT"].split(";") : [""]

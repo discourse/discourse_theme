@@ -38,6 +38,18 @@ class DiscourseTheme::Config
       set("components", val)
     end
 
+    def local_discourse_directory_configured?
+      !safe_config["local_discourse_directory"].nil?
+    end
+
+    def local_discourse_directory
+      safe_config["local_discourse_directory"]
+    end
+
+    def local_discourse_directory=(dir)
+      set("local_discourse_directory", dir)
+    end
+
     protected
 
     def set(name, val)
