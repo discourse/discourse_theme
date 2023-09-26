@@ -37,7 +37,7 @@ module DiscourseTheme
 
           if settings.local_discourse_directory.empty?
             run_tests_with_docker(
-              Pathname.new(dir).basename.to_s,
+              File.basename(dir),
               spec_directory,
               spec_path,
               headless: headless,
