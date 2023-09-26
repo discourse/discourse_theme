@@ -38,7 +38,7 @@ Uploads a theme to the server. Requires the theme to have been previously synchr
 
 ### `discourse_theme rspec PATH`
 
-Runs the [RSpec](https://rspec.info/) system tests under the `spec` folder in the designated directory.
+Runs the [RSpec](https://rspec.info/) system tests under the `spec` folder in the designated theme directory.
 
 On the first run for the given directory, you will be asked if you'll like to use a local Discourse repository to run the tests.
 
