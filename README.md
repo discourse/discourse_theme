@@ -49,7 +49,7 @@ If the 'n' option is selected, the tests will run in a Docker container created 
 
 When the `--headless` option is used, a local installation of the [Google Chrome browser](https://www.google.com/chrome/) is required.
 
-Run `discourse_theme` for more usage details.
+Run `discourse_theme --help` for more usage details.
 
 ## Contributing
 
