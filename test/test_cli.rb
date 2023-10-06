@@ -86,8 +86,8 @@ class TestCli < Minitest::Test
     $stderr.reopen original_stderr
   end
 
-  def settings
-    DiscourseTheme::Config.new(DiscourseTheme::Cli.settings_file)[@dir]
+  def settings(setting_dir = @dir)
+    DiscourseTheme::Config.new(DiscourseTheme::Cli.settings_file)[setting_dir]
   end
 
   def test_watch
@@ -434,6 +434,19 @@ class TestCli < Minitest::Test
 
     mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir)
     run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)
+  end
+
+  def test_rspec_using_local_discourse_repository_dir_path_to_custom_rspec_folder
+    args = ["rspec", File.join(@spec_dir, "/spec/system")]
+
+    cli = DiscourseTheme::Cli.new
+
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir)
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)
   end
 
   def test_rspec_using_local_discourse_repository_with_headless_option
@@ -461,6 +474,7 @@ class TestCli < Minitest::Test
       end
 
     assert_match("/non/existence/directory does not exist", output)
+    assert_nil(settings(@spec_dir).local_discourse_directory)
   end
 
   def test_rspec_using_local_discourse_repository_with_directory_that_is_not_a_discourse_respository
@@ -541,6 +555,8 @@ class TestCli < Minitest::Test
     mock_rspec_docker_commands(verbose: false, setup_commands: false, container_state: "running")
 
     run_cli_rspec_with_docker(cli, args)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, "")
   end
 
   def test_rspec_using_docker_with_dir_path_to_custom_rspec_folder
@@ -556,6 +572,8 @@ class TestCli < Minitest::Test
     )
 
     run_cli_rspec_with_docker(cli, args)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, "")
   end
 
   def test_rspec_using_docker_with_dir_path_to_rspec_file
@@ -571,6 +589,8 @@ class TestCli < Minitest::Test
     )
 
     run_cli_rspec_with_docker(cli, args)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, "")
   end
 
   def test_rspec_using_docker_with_dir_path_to_rspec_file_with_line_number
@@ -586,5 +606,7 @@ class TestCli < Minitest::Test
     )
 
     run_cli_rspec_with_docker(cli, args)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, "")
   end
 end

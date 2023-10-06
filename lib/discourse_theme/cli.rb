@@ -182,7 +182,7 @@ module DiscourseTheme
         end
       elsif command == "rspec"
         DiscourseTheme::CliCommands::Rspec.run(
-          settings: settings,
+          settings: config[dir.split("/spec")[0]],
           dir: dir,
           args: args,
           reset: reset,
