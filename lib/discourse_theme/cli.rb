@@ -23,7 +23,7 @@ module DiscourseTheme
         upload DIR            - Uploads the theme from the specified directory to Discourse.
         watch DIR             - Watches the theme in the specified directory and synchronizes any changes with Discourse.
         rspec DIR [OPTIONS]   - Runs the RSpec tests in the specified directory. The tests can be run using a local Discourse repository or a Docker container.
-          --headless          - Runs the RSpec system type tests in headless mode. Applies to both modes.
+          --headful           - Runs the RSpec system type tests in headful mode. Applies to both modes.
 
           If specified directory has been configured to run in a Docker container, the additional options are supported.
           --rebuild           - Forces a rebuilds of Docker container.
