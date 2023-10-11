@@ -7,7 +7,7 @@ module DiscourseTheme
     class Rspec
       DISCOURSE_TEST_DOCKER_CONTAINER_NAME_PREFIX = "discourse_theme_test"
       DISCOURSE_THEME_TEST_TMP_DIR = "/tmp/.discourse_theme_test"
-      SELENIUM_HEADLESS_ENV = "SELENIUM_HEADLESS=0"
+      SELENIUM_HEADFUL_ENV = "SELENIUM_HEADLESS=0"
 
       class << self
         def discourse_test_docker_container_name
@@ -33,7 +33,7 @@ module DiscourseTheme
 
           configure_local_directory(settings)
 
-          headless = !!args.delete("--headless")
+          headless = !args.delete("--headful")
 
           if settings.local_discourse_directory.empty?
             run_tests_with_docker(
@@ -88,7 +88,7 @@ module DiscourseTheme
 
           Kernel.exec(
             ENV,
-            "cd #{local_directory} && #{headless ? SELENIUM_HEADLESS_ENV : ""} bundle exec rspec #{spec_path}",
+            "cd #{local_directory} && #{headless ? "" : SELENIUM_HEADFUL_ENV} bundle exec rspec #{spec_path}",
           )
         end
 
@@ -171,7 +171,7 @@ module DiscourseTheme
 
           rspec_envs = []
 
-          if headless
+          if !headless
             container_ip =
               execute(
                 command:
@@ -181,7 +181,7 @@ module DiscourseTheme
             service =
               start_chromedriver(allowed_origin: "host.docker.internal", allowed_ip: container_ip)
 
-            rspec_envs.push(SELENIUM_HEADLESS_ENV)
+            rspec_envs.push(SELENIUM_HEADFUL_ENV)
             rspec_envs.push("CAPYBARA_SERVER_HOST=0.0.0.0")
             rspec_envs.push(
               "CAPYBARA_REMOTE_DRIVER_URL=http://host.docker.internal:#{service.uri.port}",

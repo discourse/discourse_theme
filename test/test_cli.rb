@@ -295,10 +295,10 @@ class TestCli < Minitest::Test
     end
   end
 
-  def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: false)
+  def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: true)
     Kernel.expects(:exec).with(
       anything,
-      "cd #{dir} && #{headless ? DiscourseTheme::CliCommands::Rspec::SELENIUM_HEADLESS_ENV : ""} bundle exec rspec #{File.join(spec_dir, rspec_path)}",
+      "cd #{dir} && #{headless ? "" : DiscourseTheme::CliCommands::Rspec::SELENIUM_HEADFUL_ENV} bundle exec rspec #{File.join(spec_dir, rspec_path)}",
     )
   end
 
@@ -307,7 +307,7 @@ class TestCli < Minitest::Test
     setup_commands:,
     rspec_path: "/spec",
     container_state: nil,
-    headless: false
+    headless: true
   )
     DiscourseTheme::CliCommands::Rspec
       .expects(:execute)
@@ -376,7 +376,7 @@ class TestCli < Minitest::Test
       )
     end
 
-    if headless
+    if !headless
       fake_ip = "123.456.789"
 
       DiscourseTheme::CliCommands::Rspec
@@ -449,12 +449,12 @@ class TestCli < Minitest::Test
     assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)
   end
 
-  def test_rspec_using_local_discourse_repository_with_headless_option
-    args = ["rspec", @spec_dir, "--headless"]
+  def test_rspec_using_local_discourse_repository_with_headful_option
+    args = ["rspec", @spec_dir, "--headful"]
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir, headless: true)
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir, headless: false)
     run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
   end
 
@@ -509,11 +509,11 @@ class TestCli < Minitest::Test
     run_cli_rspec_with_docker(cli, args)
   end
 
-  def test_rspec_using_docker_with_headless_option
-    args = ["rspec", @spec_dir, "--headless"]
+  def test_rspec_using_docker_with_headful_option
+    args = ["rspec", @spec_dir, "--headful"]
 
     cli = DiscourseTheme::Cli.new
-    mock_rspec_docker_commands(verbose: false, setup_commands: true, headless: true)
+    mock_rspec_docker_commands(verbose: false, setup_commands: true, headless: false)
 
     run_cli_rspec_with_docker(cli, args)
   end
