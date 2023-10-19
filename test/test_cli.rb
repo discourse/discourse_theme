@@ -443,7 +443,39 @@ class TestCli < Minitest::Test
 
     cli = DiscourseTheme::Cli.new
 
-    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir)
+    mock_rspec_local_discourse_commands(@discourse_dir, @spec_dir, rspec_path: "/spec/system")
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)
+  end
+
+  def test_rspec_using_local_discourse_repository_dir_path_to_custom_rspec_file
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_spec.rb")]
+
+    cli = DiscourseTheme::Cli.new
+
+    mock_rspec_local_discourse_commands(
+      @discourse_dir,
+      @spec_dir,
+      rspec_path: "/spec/system/some_spec.rb",
+    )
+
+    run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
+
+    assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)
+  end
+
+  def test_rspec_using_local_discourse_repository_dir_path_to_custom_rspec_file_with_line_number
+    args = ["rspec", File.join(@spec_dir, "/spec/system/some_spec.rb:44")]
+
+    cli = DiscourseTheme::Cli.new
+
+    mock_rspec_local_discourse_commands(
+      @discourse_dir,
+      @spec_dir,
+      rspec_path: "/spec/system/some_spec.rb:44",
+    )
+
     run_cli_rspec_with_local_discourse_repository(cli, args, @discourse_dir)
 
     assert_equal(settings(@spec_dir).local_discourse_directory, @discourse_dir)

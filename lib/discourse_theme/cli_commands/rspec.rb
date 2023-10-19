@@ -47,7 +47,7 @@ module DiscourseTheme
           else
             run_tests_locally(
               settings.local_discourse_directory,
-              spec_directory,
+              File.join(dir, spec_path),
               headless: headless,
             )
           end
