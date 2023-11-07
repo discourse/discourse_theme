@@ -35,11 +35,15 @@ module DiscourseTheme
 
           headless = !args.delete("--headful")
 
+          required_paths =
+            list_files_in_directory("#{spec_directory}/system/page_objects", spec_directory)
+
           if settings.local_discourse_directory.empty?
             run_tests_with_docker(
               File.basename(dir),
               spec_directory,
               spec_path,
+              required_paths,
               headless: headless,
               verbose: !!args.delete("--verbose"),
               rebuild: !!args.delete("--rebuild"),
@@ -48,6 +52,7 @@ module DiscourseTheme
             run_tests_locally(
               settings.local_discourse_directory,
               File.join(dir, spec_path),
+              required_paths.map { |path| File.join(dir, path) },
               headless: headless,
             )
           end
@@ -81,14 +86,16 @@ module DiscourseTheme
           output
         end
 
-        def run_tests_locally(local_directory, spec_path, headless: false)
+        def run_tests_locally(local_directory, spec_path, require_paths, headless: false)
           UI.progress(
             "Running RSpec tests using local Discourse repository located at '#{local_directory}'...",
           )
 
+          spec_requires = require_paths.map { |path| "-r #{path}" }.join(" ")
+
           Kernel.exec(
             ENV,
-            "cd #{local_directory} && #{headless ? "" : SELENIUM_HEADFUL_ENV} bundle exec rspec #{spec_path}",
+            "cd #{local_directory} && #{headless ? "" : SELENIUM_HEADFUL_ENV} bundle exec rspec #{spec_requires} #{spec_path}",
           )
         end
 
@@ -96,6 +103,7 @@ module DiscourseTheme
           theme_directory_name,
           spec_directory,
           spec_path,
+          require_paths,
           headless: false,
           verbose: false,
           rebuild: false
@@ -195,9 +203,14 @@ module DiscourseTheme
             FileUtils.mkdir_p(tmp_theme_directory) if !Dir.exist?(tmp_theme_directory)
             FileUtils.cp_r(spec_directory, File.join(tmp_theme_directory))
 
+            rspec_spec_path = File.join("/tmp", theme_directory_name, spec_path)
+            rspec_spec_requires =
+              require_paths
+                .map { |path| "-r #{File.join("/tmp", theme_directory_name, path)}" }
+                .join(" ")
             execute(
               command:
-                "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{File.join("/tmp", theme_directory_name, spec_path)}".squeeze(
+                "docker exec #{rspec_envs} -t -u discourse:discourse #{container_name} bundle exec rspec #{rspec_spec_requires} #{rspec_spec_path}".squeeze(
                   " ",
                 ),
               stream: true,
@@ -239,6 +252,27 @@ module DiscourseTheme
           service.executable_path = Selenium::WebDriver::DriverFinder.path(options, service.class)
           service.args = ["--allowed-ips=#{allowed_ip}", "--allowed-origins=#{allowed_origin}"]
           service.launch
+        end
+
+        # Returns a list of files recursively from `directory`, and prepends `base_directory` to each file.
+        #
+        # /spec/helpers/foo.rb
+        # /spec/helpers/bar.rb
+        # /spec/baz.rb
+        #
+        # list_files_in_directory("/spec/helpers", "/spec")
+        # will return ["spec/helpers/foo.rb", "spec/helpers/bar.rb"]
+        #
+        # list_files_in_directory("/spec/helpers")
+        # will return ["helpers/foo.rb", "helpers/bar.rb"]
+        def list_files_in_directory(directory, base_directory = nil)
+          base_directory ||= directory
+          Dir
+            .glob(File.join(directory, "**", "*"))
+            .select { |file| File.file?(file) }
+            .map do |file|
+              File.join(File.basename(base_directory), file.sub("#{base_directory}/", ""))
+            end
         end
       end
     end
