@@ -90,7 +90,7 @@ module DiscourseTheme
             "Running RSpec tests using local Discourse repository located at '#{local_directory}'...",
           )
 
-          spec_requires = require_paths.map { |path| "-r #{path}" }.join(" ")
+          spec_requires = require_paths.map { |path| "--require #{path}" }.join(" ")
 
           Kernel.exec(
             ENV,
@@ -205,7 +205,7 @@ module DiscourseTheme
             rspec_spec_path = File.join("/tmp", theme_directory_name, spec_path)
             rspec_spec_requires =
               require_paths
-                .map { |path| "-r #{File.join("/tmp", theme_directory_name, path)}" }
+                .map { |path| "--require #{File.join("/tmp", theme_directory_name, path)}" }
                 .join(" ")
             execute(
               command:
