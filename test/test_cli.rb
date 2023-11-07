@@ -295,10 +295,16 @@ class TestCli < Minitest::Test
     end
   end
 
-  def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: true)
+  def mock_rspec_local_discourse_commands(
+    dir,
+    spec_dir,
+    rspec_path: "/spec",
+    requires: "",
+    headless: true
+  )
     Kernel.expects(:exec).with(
       anything,
-      "cd #{dir} && #{headless ? "" : DiscourseTheme::CliCommands::Rspec::SELENIUM_HEADFUL_ENV} bundle exec rspec #{File.join(spec_dir, rspec_path)}",
+      "cd #{dir} && #{headless ? "" : DiscourseTheme::CliCommands::Rspec::SELENIUM_HEADFUL_ENV} bundle exec rspec #{requires} #{File.join(spec_dir, rspec_path)}",
     )
   end
 
