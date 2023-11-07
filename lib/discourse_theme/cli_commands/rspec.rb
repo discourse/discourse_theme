@@ -35,8 +35,7 @@ module DiscourseTheme
 
           headless = !args.delete("--headful")
 
-          required_paths =
-            list_files_in_directory("#{spec_directory}/system/page_objects", spec_directory)
+          required_paths = list_non_spec_files_in_directory(spec_directory)
 
           if settings.local_discourse_directory.empty?
             run_tests_with_docker(
@@ -254,25 +253,11 @@ module DiscourseTheme
           service.launch
         end
 
-        # Returns a list of files recursively from `directory`, and prepends `base_directory` to each file.
-        #
-        # /spec/helpers/foo.rb
-        # /spec/helpers/bar.rb
-        # /spec/baz.rb
-        #
-        # list_files_in_directory("/spec/helpers", "/spec")
-        # will return ["spec/helpers/foo.rb", "spec/helpers/bar.rb"]
-        #
-        # list_files_in_directory("/spec/helpers")
-        # will return ["helpers/foo.rb", "helpers/bar.rb"]
-        def list_files_in_directory(directory, base_directory = nil)
-          base_directory ||= directory
+        def list_non_spec_files_in_directory(directory)
           Dir
             .glob(File.join(directory, "**", "*"))
-            .select { |file| File.file?(file) }
-            .map do |file|
-              File.join(File.basename(base_directory), file.sub("#{base_directory}/", ""))
-            end
+            .select { |file| File.file?(file) && !file.end_with?("spec.rb") }
+            .map { |file| File.join(File.basename(directory), file.sub("#{directory}/", "")) }
         end
       end
     end
