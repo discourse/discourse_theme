@@ -119,7 +119,7 @@ module DiscourseTheme
              ).empty?
             is_running = JSON.parse(output)["State"] == "running"
           end
-
+          #
           if !is_running || rebuild
             # Stop older versions of Docker container
             existing_docker_container_ids =
