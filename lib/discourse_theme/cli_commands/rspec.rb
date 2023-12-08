@@ -37,7 +37,7 @@ module DiscourseTheme
 
           if settings.local_discourse_directory.empty?
             run_tests_with_docker(
-              File.basename(dir),
+              dir,
               spec_directory,
               spec_path,
               headless: headless,
@@ -93,13 +93,15 @@ module DiscourseTheme
         end
 
         def run_tests_with_docker(
-          theme_directory_name,
+          theme_directory,
           spec_directory,
           spec_path,
           headless: false,
           verbose: false,
           rebuild: false
         )
+          theme_directory_name = File.basename(theme_directory)
+
           image = "discourse/discourse_test:release"
           UI.progress("Running RSpec tests using '#{image}' Docker image...")
 
@@ -191,9 +193,7 @@ module DiscourseTheme
           rspec_envs = rspec_envs.map { |env| "-e #{env}" }.join(" ")
 
           begin
-            tmp_theme_directory = File.join(DISCOURSE_THEME_TEST_TMP_DIR, theme_directory_name)
-            FileUtils.mkdir_p(tmp_theme_directory) if !Dir.exist?(tmp_theme_directory)
-            FileUtils.cp_r(spec_directory, File.join(tmp_theme_directory))
+            FileUtils.cp_r(theme_directory, DISCOURSE_THEME_TEST_TMP_DIR)
 
             execute(
               command:
@@ -203,7 +203,7 @@ module DiscourseTheme
               stream: true,
             )
           ensure
-            FileUtils.rm_rf(File.join(tmp_theme_directory, "/spec"))
+            FileUtils.rm_rf(File.join(DISCOURSE_THEME_TEST_TMP_DIR, theme_directory_name))
           end
         end
 
