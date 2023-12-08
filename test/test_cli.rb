@@ -376,6 +376,18 @@ class TestCli < Minitest::Test
       )
     end
 
+    FileUtils.expects(:rm_rf).with(
+      File.join(
+        DiscourseTheme::CliCommands::Rspec::DISCOURSE_THEME_TEST_TMP_DIR,
+        File.basename(@spec_dir),
+      ),
+    )
+
+    FileUtils.expects(:cp_r).with(
+      @spec_dir,
+      DiscourseTheme::CliCommands::Rspec::DISCOURSE_THEME_TEST_TMP_DIR,
+    )
+
     if !headless
       fake_ip = "123.456.789"
 
