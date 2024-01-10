@@ -1,20 +1,6 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Uploader
-    def self.upload_full_theme_callbacks
-      @upload_callbacks ||= []
-    end
-
-    # Used in the test environment to register a callback that is called with the directory of the theme being uploaded.
-    def self.register_upload_full_theme_callback(&block)
-      self.upload_full_theme_callbacks << block
-    end
-
-    # Used in the test environment to clear the registered callbacks.
-    def self.reset_upload_full_theme_callbacks
-      self.upload_full_theme_callbacks.clear
-    end
-
     def initialize(dir:, client:, theme_id: nil, components: nil)
       @dir = dir
       @client = client
@@ -67,27 +53,19 @@ module DiscourseTheme
       UI.error "(end of errors)" if diagnose_errors(json) != 0
     end
 
-    def upload_full_theme(ignore_files: [], ignore_directories: [])
+    def upload_full_theme(skip_migrations: false)
       filename = "#{Pathname.new(Dir.tmpdir).realpath}/bundle_#{SecureRandom.hex}.tar.gz"
-      temp_dir = nil
 
-      theme_dir =
-        if !ignore_files.empty? || !ignore_directories.empty?
-          temp_dir = Dir.mktmpdir
-          FileUtils.copy_entry(@dir, temp_dir)
-          ignore_files.each { |file| FileUtils.rm_f(File.join(temp_dir, file)) }
-          ignore_directories.each { |directory| FileUtils.rm_rf(File.join(temp_dir, directory)) }
-          temp_dir
-        else
-          @dir
-        end
-
-      self.class.upload_full_theme_callbacks.each { |cb| cb.call(theme_dir) }
-
-      compress_dir(filename, theme_dir)
+      compress_dir(filename, @dir)
 
       File.open(filename) do |tgz|
-        response = @client.upload_full_theme(tgz, theme_id: @theme_id, components: @components)
+        response =
+          @client.upload_full_theme(
+            tgz,
+            theme_id: @theme_id,
+            components: @components,
+            skip_migrations: skip_migrations,
+          )
 
         json = JSON.parse(response.body)
         @theme_id = json["theme"]["id"]
@@ -95,7 +73,6 @@ module DiscourseTheme
         @theme_id
       end
     ensure
-      FileUtils.rm_rf(temp_dir) if temp_dir
       FileUtils.rm_f(filename)
     end
   end

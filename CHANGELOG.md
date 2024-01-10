@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Fixed
+### Added
 
-- `DiscourseTheme::Watcher` was incorrectly ignoring any files with `migrations` in the pathname. (#39)
-- `DiscourseTheme::Watcher` was incorrectly uploading migration files when any file changes have been detected. (#39)
+- `watch` command for `discourse_theme` will prompt user if pending theme migrations should be run (#40)
+
+### Removed
+
+- Remove upload theme migrations prompt to `watch` command for `discourse_theme` CLI previously added in #38. Theme migrations
+  files are always uploaded going forward.
 
 ## [1.1.0] - 2024-01-10
 

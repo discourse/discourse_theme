@@ -36,7 +36,7 @@ module DiscourseTheme
       exit 1
     end
 
-    def run(args, &block)
+    def run(args)
       usage unless args[1]
 
       reset = !!args.delete("--reset")
@@ -116,7 +116,7 @@ module DiscourseTheme
         UI.progress "Uploading theme from #{dir}"
 
         settings.theme_id =
-          theme_id = uploader.upload_full_theme(ignore_files: ignored_migrations(theme, dir))
+          theme_id = uploader.upload_full_theme(skip_migrations: skip_migrations(theme, dir))
 
         UI.success "Theme uploaded (id:#{theme_id})"
         UI.info "Preview: #{client.url}/?preview_theme_id=#{theme_id}"
@@ -131,7 +131,7 @@ module DiscourseTheme
 
         watcher = DiscourseTheme::Watcher.new(dir: dir, uploader: uploader)
         UI.progress "Watching for changes in #{dir}..."
-        watcher.watch(&block)
+        watcher.watch
       elsif command == "download"
         client = DiscourseTheme::Client.new(dir, settings, reset: reset)
         downloader = DiscourseTheme::Downloader.new(dir: dir, client: client)
@@ -205,40 +205,41 @@ module DiscourseTheme
 
     private
 
-    def ignored_migrations(theme, dir)
-      return [] unless theme && Dir.exist?(File.join(dir, "migrations"))
+    def skip_migrations(theme, dir)
+      return true unless theme && Dir.exist?(File.join(dir, "migrations"))
 
-      existing_migrations =
+      migrated_migrations =
         theme
           .dig("theme_fields")
           &.filter_map do |theme_field|
-            theme_field["name"] if theme_field["target"] == "migrations"
+            if theme_field["target"] == "migrations" && theme_field["migrated"] == true
+              theme_field["name"]
+            end
           end || []
 
-      new_migrations =
+      pending_migrations =
         Dir["#{dir}/migrations/**/*.js"]
           .reject do |f|
-            existing_migrations.any? do |existing_migration|
+            migrated_migrations.any? do |existing_migration|
               File.basename(f).include?(existing_migration)
             end
           end
           .map { |f| Pathname.new(f).relative_path_from(Pathname.new(dir)).to_s }
 
-      if !new_migrations.empty?
-        options = { "Yes" => :yes, "No" => :no }
+      return true if pending_migrations.empty?
 
-        choice = UI.select(<<~TEXT, options.keys)
-        Would you like to upload and run the following pending theme migration(s): #{new_migrations.join(", ")}
+      options = { "No" => :no, "Yes" => :yes }
+
+      choice = UI.select(<<~TEXT, options.keys)
+        Would you like to run the following pending theme migration(s): #{pending_migrations.join(", ")}
+          Select 'No' if you are in the midst of adding or modifying theme migration(s).
         TEXT
 
-        if options[choice] == :no
-          UI.warn "Pending theme migrations have not been uploaded, run `discourse_theme upload #{dir}` if you wish to upload and run the theme migrations."
-          new_migrations
-        else
-          []
-        end
+      if options[choice] == :no
+        UI.warn "Pending theme migrations have not been run, run `discourse_theme upload #{dir}` if you wish to run the theme migrations."
+        true
       else
-        []
+        false
       end
     end
 

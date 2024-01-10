@@ -35,6 +35,7 @@ class TestCli < Minitest::Test
                   "target" => "migrations",
                   "value" => "export default function migrate(settings) {\n  return settings;\n}\n",
                   "type_id" => 6,
+                  "migrated" => true,
                 },
               ],
             },
@@ -63,8 +64,6 @@ class TestCli < Minitest::Test
     ENV["DISCOURSE_API_KEY"] = "abc"
 
     DiscourseTheme::Watcher.return_immediately!
-    DiscourseTheme::Watcher.reset_start_subscribers
-    DiscourseTheme::Uploader.reset_upload_full_theme_callbacks
   end
 
   DiscourseTheme::Cli.settings_file = Tempfile.new("settings")
@@ -167,7 +166,7 @@ class TestCli < Minitest::Test
     assert_equal(settings.theme_id, 6)
   end
 
-  def test_watch_does_not_upload_pending_migrations_when_user_does_not_opt_in_after_being_prompted
+  def test_watch_uploads_theme_with_skip_migrations_params_when_user_does_not_want_to_run_migrations_after_prompted
     args = ["watch", @dir]
 
     FileUtils.mkdir_p(File.join(@dir, "migrations", "settings"))
@@ -184,13 +183,39 @@ class TestCli < Minitest::Test
     }
     JS
 
-    callback_called = false
+    DiscourseTheme::UI.stub(
+      :select,
+      ->(question, options) do
+        case question
+        when "How would you like to sync this theme?"
+          options[0]
+        when "Would you like to run the following pending theme migration(s): migrations/settings/0002-rename-settings.js\n  Select 'No' if you are in the midst of adding or modifying theme migration(s).\n"
+          options[0]
+        end
+      end,
+    ) { DiscourseTheme::Cli.new.run(args) }
 
-    DiscourseTheme::Uploader.register_upload_full_theme_callback do |theme_dir|
-      assert(File.exist?(File.join(theme_dir, "migrations", "settings", "0001-rename-settings.js")))
-      refute(File.exist?(File.join(theme_dir, "migrations", "settings", "0002-rename-settings.js")))
-      callback_called = true
+    assert_requested(:post, "http://my.forum.com/admin/themes/import.json", times: 1) do |req|
+      req.body.include?("skip_migrations")
     end
+  end
+
+  def test_watch_uploads_theme_without_skip_migrations_params_when_user_wants_to_run_migrations_after_prompted
+    args = ["watch", @dir]
+
+    FileUtils.mkdir_p(File.join(@dir, "migrations", "settings"))
+
+    File.write(File.join(@dir, "migrations", "settings", "0001-rename-settings.js"), <<~JS)
+    export default function migrate(settings) {
+      return settings;
+    }
+    JS
+
+    File.write(File.join(@dir, "migrations", "settings", "0002-rename-settings.js"), <<~JS)
+    export default function migrate(settings) {
+      return settings;
+    }
+    JS
 
     DiscourseTheme::UI.stub(
       :select,
@@ -198,124 +223,15 @@ class TestCli < Minitest::Test
         case question
         when "How would you like to sync this theme?"
           options[0]
-        when "Would you like to upload and run the following pending theme migration(s): migrations/settings/0002-rename-settings.js\n"
+        when "Would you like to run the following pending theme migration(s): migrations/settings/0002-rename-settings.js\n  Select 'No' if you are in the midst of adding or modifying theme migration(s).\n"
           options[1]
         end
       end,
     ) { suppress_output { DiscourseTheme::Cli.new.run(args) } }
 
-    assert callback_called
-  end
-
-  def test_watch_uploads_pending_migrations_when_user_opts_in_after_being_prompted
-    args = ["watch", @dir]
-
-    FileUtils.mkdir_p(File.join(@dir, "migrations", "settings"))
-
-    File.write(File.join(@dir, "migrations", "settings", "0001-rename-settings.js"), <<~JS)
-    export default function migrate(settings) {
-      return settings;
-    }
-    JS
-
-    File.write(File.join(@dir, "migrations", "settings", "0002-rename-settings.js"), <<~JS)
-    export default function migrate(settings) {
-      return settings;
-    }
-    JS
-
-    callback_called = false
-
-    DiscourseTheme::Uploader.register_upload_full_theme_callback do |theme_dir|
-      assert(File.exist?(File.join(theme_dir, "migrations", "settings", "0001-rename-settings.js")))
-      assert(File.exist?(File.join(theme_dir, "migrations", "settings", "0002-rename-settings.js")))
-      callback_called = true
+    assert_requested(:post, "http://my.forum.com/admin/themes/import.json", times: 1) do |req|
+      !req.body.include?("skip_migrations")
     end
-
-    DiscourseTheme::UI.stub(
-      :select,
-      ->(question, options) do
-        case question
-        when "How would you like to sync this theme?"
-          options[0]
-        when "Would you like to upload and run the following pending theme migration(s): migrations/settings/0002-rename-settings.js\n"
-          options[0]
-        end
-      end,
-    ) { suppress_output { DiscourseTheme::Cli.new.run(args) } }
-
-    assert callback_called
-  end
-
-  def test_watch_ignores_theme_migrations
-    DiscourseTheme::Watcher.return_immediately = false
-
-    args = ["watch", @dir]
-    added = []
-    listener_started = false
-
-    DiscourseTheme::Watcher.subscribe_start { listener_started = true }
-
-    thread =
-      Thread.new do
-        DiscourseTheme::UI.stub(:select, ->(question, options) { options[0] }) do
-          suppress_output { DiscourseTheme::Cli.new.run(args) { |m, a, r| added.concat(a) } }
-        end
-      end
-
-    wait_for(1000) { listener_started }
-
-    upload_full_theme_callback_called = false
-
-    DiscourseTheme::Uploader.register_upload_full_theme_callback do |theme_dir|
-      refute(
-        File.exist?(
-          File.join(theme_dir, "migrations", "settings", "0001-some-settings-migration.js"),
-        ),
-      )
-
-      upload_full_theme_callback_called = true
-    end
-
-    FileUtils.mkdir_p(File.join(@dir, "locales"))
-
-    locale_file_path = File.join(@dir, "locales", "en.yml")
-
-    File.write(locale_file_path, <<~YAML)
-    en:
-      something: "test"
-    YAML
-
-    FileUtils.mkdir_p(File.join(@dir, "migrations", "settings"))
-
-    File.write(File.join(@dir, "migrations", "settings", "0001-some-settings-migration.js"), <<~JS)
-      export default function migrate(settings) {
-        return settings;
-      }
-      JS
-
-    FileUtils.mkdir_p(File.join(@dir, "test", "unit", "migrations", "settings"))
-
-    migration_test_path =
-      File.join(
-        @dir,
-        "test",
-        "unit",
-        "migrations",
-        "settings",
-        "0001-some-settings-migration-test.js",
-      )
-
-    File.write(migration_test_path, "")
-
-    wait_for(1000) { !added.empty? }
-
-    assert_equal([locale_file_path, migration_test_path], added)
-
-    wait_for(1000) { upload_full_theme_callback_called }
-
-    DiscourseTheme::Watcher.return_immediately = true
-    thread.join
   end
 
   def test_child_theme_prompt

@@ -84,7 +84,7 @@ module DiscourseTheme
       request(put)
     end
 
-    def upload_full_theme(tgz, theme_id:, components:)
+    def upload_full_theme(tgz, theme_id:, components:, skip_migrations: false)
       endpoint =
         root +
           (
@@ -95,13 +95,15 @@ module DiscourseTheme
             end
           )
 
-      post =
-        Net::HTTP::Post::Multipart.new(
-          endpoint,
-          "theme_id" => theme_id,
-          "components" => components,
-          "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz"),
-        )
+      params = {
+        "theme_id" => theme_id,
+        "components" => components,
+        "bundle" => UploadIO.new(tgz, "application/tar+gzip", "bundle.tar.gz"),
+      }
+
+      params["skip_migrations"] = true if skip_migrations
+
+      post = Net::HTTP::Post::Multipart.new(endpoint, params)
       request(post)
     end
 
