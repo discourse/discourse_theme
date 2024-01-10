@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Watcher
-    LISTEN_IGNORE_PATTERNS = [%r{migrations/.+/.+\.js}]
-
     def self.return_immediately!
       @return_immediately = true
     end
@@ -35,7 +33,7 @@ module DiscourseTheme
 
     def watch
       listener =
-        Listen.to(@dir, ignore: LISTEN_IGNORE_PATTERNS) do |modified, added, removed|
+        Listen.to(@dir, ignore: /\Amigrations/) do |modified, added, removed|
           yield(modified, added, removed) if block_given?
 
           begin
@@ -60,7 +58,7 @@ module DiscourseTheme
                 UI.progress "Detected changes in #{filename.gsub(@dir, "")}, uploading theme"
               end
 
-              @uploader.upload_full_theme
+              @uploader.upload_full_theme(ignore_directories: ["migrations"])
             end
             UI.success "Done! Watching for changes..."
           rescue DiscourseTheme::ThemeError => e
