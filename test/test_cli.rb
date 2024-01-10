@@ -265,6 +265,18 @@ class TestCli < Minitest::Test
 
     wait_for(1000) { listener_started }
 
+    upload_full_theme_callback_called = false
+
+    DiscourseTheme::Uploader.register_upload_full_theme_callback do |theme_dir|
+      refute(
+        File.exist?(
+          File.join(theme_dir, "migrations", "settings", "0001-some-settings-migration.js"),
+        ),
+      )
+
+      upload_full_theme_callback_called = true
+    end
+
     FileUtils.mkdir_p(File.join(@dir, "locales"))
 
     locale_file_path = File.join(@dir, "locales", "en.yml")
@@ -282,9 +294,25 @@ class TestCli < Minitest::Test
       }
       JS
 
+    FileUtils.mkdir_p(File.join(@dir, "test", "unit", "migrations", "settings"))
+
+    migration_test_path =
+      File.join(
+        @dir,
+        "test",
+        "unit",
+        "migrations",
+        "settings",
+        "0001-some-settings-migration-test.js",
+      )
+
+    File.write(migration_test_path, "")
+
     wait_for(1000) { !added.empty? }
 
-    assert_equal(added, [locale_file_path])
+    assert_equal([locale_file_path, migration_test_path], added)
+
+    wait_for(1000) { upload_full_theme_callback_called }
 
     DiscourseTheme::Watcher.return_immediately = true
     thread.join

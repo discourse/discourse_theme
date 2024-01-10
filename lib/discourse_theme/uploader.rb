@@ -67,16 +67,16 @@ module DiscourseTheme
       UI.error "(end of errors)" if diagnose_errors(json) != 0
     end
 
-    def upload_full_theme(ignore_files: [])
+    def upload_full_theme(ignore_files: [], ignore_directories: [])
       filename = "#{Pathname.new(Dir.tmpdir).realpath}/bundle_#{SecureRandom.hex}.tar.gz"
       temp_dir = nil
 
       theme_dir =
-        if !ignore_files.empty?
+        if !ignore_files.empty? || !ignore_directories.empty?
           temp_dir = Dir.mktmpdir
           FileUtils.copy_entry(@dir, temp_dir)
-          dir_pathname = Pathname.new(@dir)
           ignore_files.each { |file| FileUtils.rm_f(File.join(temp_dir, file)) }
+          ignore_directories.each { |directory| FileUtils.rm_rf(File.join(temp_dir, directory)) }
           temp_dir
         else
           @dir
