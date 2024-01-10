@@ -28,6 +28,10 @@ module DiscourseTheme
       puts @@pastel.red("✘ #{message}")
     end
 
+    def self.warn(message)
+      puts @@pastel.yellow("⚠ #{message}")
+    end
+
     def self.success(message)
       puts @@pastel.green("✔ #{message}")
     end

@@ -1,12 +1,31 @@
 # frozen_string_literal: true
 module DiscourseTheme
   class Watcher
+    LISTEN_IGNORE_PATTERNS = [%r{migrations/.+/.+\.js}]
+
     def self.return_immediately!
       @return_immediately = true
     end
 
+    def self.return_immediately=(val)
+      @return_immediately = val
+    end
+
     def self.return_immediately?
       !!@return_immediately
+    end
+
+    def self.subscribe_start(&block)
+      @subscribers ||= []
+      @subscribers << block
+    end
+
+    def self.call_start_subscribers
+      @subscribers&.each(&:call)
+    end
+
+    def self.reset_start_subscribers
+      @subscribers = []
     end
 
     def initialize(dir:, uploader:)
@@ -16,7 +35,9 @@ module DiscourseTheme
 
     def watch
       listener =
-        Listen.to(@dir) do |modified, added, removed|
+        Listen.to(@dir, ignore: LISTEN_IGNORE_PATTERNS) do |modified, added, removed|
+          yield(modified, added, removed) if block_given?
+
           begin
             if modified.length == 1 && added.length == 0 && removed.length == 0 &&
                  (resolved = resolve_file(modified[0]))
@@ -31,12 +52,14 @@ module DiscourseTheme
               )
             else
               count = modified.length + added.length + removed.length
+
               if count > 1
                 UI.progress "Detected changes in #{count} files, uploading theme"
               else
                 filename = modified[0] || added[0] || removed[0]
                 UI.progress "Detected changes in #{filename.gsub(@dir, "")}, uploading theme"
               end
+
               @uploader.upload_full_theme
             end
             UI.success "Done! Watching for changes..."
@@ -47,7 +70,8 @@ module DiscourseTheme
         end
 
       listener.start
-      sleep unless self.class.return_immediately?
+      self.class.call_start_subscribers
+      sleep 1 while !self.class.return_immediately?
     end
 
     protected
