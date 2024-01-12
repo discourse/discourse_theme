@@ -5,25 +5,8 @@ module DiscourseTheme
       @return_immediately = true
     end
 
-    def self.return_immediately=(val)
-      @return_immediately = val
-    end
-
     def self.return_immediately?
       !!@return_immediately
-    end
-
-    def self.subscribe_start(&block)
-      @subscribers ||= []
-      @subscribers << block
-    end
-
-    def self.call_start_subscribers
-      @subscribers&.each(&:call)
-    end
-
-    def self.reset_start_subscribers
-      @subscribers = []
     end
 
     def initialize(dir:, uploader:)
@@ -33,9 +16,7 @@ module DiscourseTheme
 
     def watch
       listener =
-        Listen.to(@dir, ignore: /\Amigrations/) do |modified, added, removed|
-          yield(modified, added, removed) if block_given?
-
+        Listen.to(@dir) do |modified, added, removed|
           begin
             if modified.length == 1 && added.length == 0 && removed.length == 0 &&
                  (resolved = resolve_file(modified[0]))
@@ -58,7 +39,7 @@ module DiscourseTheme
                 UI.progress "Detected changes in #{filename.gsub(@dir, "")}, uploading theme"
               end
 
-              @uploader.upload_full_theme(ignore_directories: ["migrations"])
+              @uploader.upload_full_theme(skip_migrations: true)
             end
             UI.success "Done! Watching for changes..."
           rescue DiscourseTheme::ThemeError => e
@@ -68,8 +49,7 @@ module DiscourseTheme
         end
 
       listener.start
-      self.class.call_start_subscribers
-      sleep 1 while !self.class.return_immediately?
+      sleep if !self.class.return_immediately?
     end
 
     protected
