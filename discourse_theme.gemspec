@@ -36,10 +36,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "guard"
   spec.add_development_dependency "guard-minitest"
   spec.add_development_dependency "webmock"
-  spec.add_development_dependency "rubocop"
-  spec.add_development_dependency "rubocop-discourse"
+  spec.add_development_dependency "rubocop-discourse", "~> 3.6.0"
   spec.add_development_dependency "m"
   spec.add_development_dependency "syntax_tree"
-  spec.add_development_dependency "syntax_tree-disable_ternary"
   spec.add_development_dependency "mocha"
 end

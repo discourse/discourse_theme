@@ -73,7 +73,7 @@ module DiscourseTheme
             success = exit_status.success?
 
             unless success
-              UI.error "Error occured while running: `#{command}`:\n\n#{output}" unless stream
+              UI.error "Error occurred while running: `#{command}`:\n\n#{output}" unless stream
               exit 1 if exit_on_error
             end
           end

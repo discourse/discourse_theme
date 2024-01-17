@@ -45,7 +45,7 @@ On the first run for the given directory, you will be asked if you'll like to us
 If you select 'Y' and proceeds to configure the path to the local Discourse repository, the tests will be ran using the local Discourse development environment provided by the local Discourse repository. Note that you'll have to set up the local test environment before
 the tests can be ran successfully.
 
-If the 'n' option is selected, the tests will run in a Docker container created using the [`discourse/discours_test:release`](https://hub.docker.com/r/discourse/discourse_test) Docker image. Note that this requires [Docker](https://docs.docker.com/engine/install/) to be installed.
+If the 'n' option is selected, the tests will run in a Docker container created using the [`discourse/discourse_test:release`](https://hub.docker.com/r/discourse/discourse_test) Docker image. Note that this requires [Docker](https://docs.docker.com/engine/install/) to be installed.
 
 When the `--headless` option is used, a local installation of the [Google Chrome browser](https://www.google.com/chrome/) is required.
 
