@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative '../lib/discourse_theme'
+require_relative "../lib/discourse_theme"
 
 DiscourseTheme::Cli.new.run(ARGV)

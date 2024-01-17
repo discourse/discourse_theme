@@ -615,7 +615,7 @@ class TestCli < Minitest::Test
     assert_nil(settings(@spec_dir).local_discourse_directory)
   end
 
-  def test_rspec_using_local_discourse_repository_with_directory_that_is_not_a_discourse_respository
+  def test_rspec_using_local_discourse_repository_with_directory_that_is_not_a_discourse_repository
     args = ["rspec", @spec_dir]
 
     cli = DiscourseTheme::Cli.new
