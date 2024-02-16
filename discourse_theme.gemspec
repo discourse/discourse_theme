@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "listen", "~> 3.1"
   spec.add_runtime_dependency "multipart-post", "~> 2.0"
   spec.add_runtime_dependency "tty-prompt", "~> 0.18"
-  spec.add_runtime_dependency "rubyzip", "~> 1.2"
+  spec.add_runtime_dependency "rubyzip", "~> 2.3"
   spec.add_runtime_dependency "selenium-webdriver", "> 4.11"
 
   spec.add_development_dependency "bundler"
