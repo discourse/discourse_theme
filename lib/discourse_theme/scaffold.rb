@@ -31,6 +31,7 @@ module DiscourseTheme
       is_component = UI.yes?("Is this a component?")
 
       if online?
+        puts "Downloading discourse-plugin-skeleton"
         tmp = Dir.mktmpdir
         system "git",
                "clone",
