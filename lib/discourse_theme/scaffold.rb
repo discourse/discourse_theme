@@ -5,44 +5,15 @@ require "json"
 require "yaml"
 require "resolv"
 
-def online?
-  !!Resolv::DNS.new.getaddress("github.com")
-rescue Resolv::ResolvError => e
-  false
-end
-
 module DiscourseTheme
   class Scaffold
-    SKELETON_DIR = File.expand_path("~/.discourse_theme_skeleton")
-
     def self.generate(dir, name:)
       UI.progress "Generating a scaffold theme at #{dir}"
 
       name = UI.ask("What would you like to call your theme?", default: name).to_s.strip
       is_component = UI.yes?("Is this a component?")
 
-      if online?
-        puts "Downloading discourse-theme-skeleton"
-        tmp = Dir.mktmpdir
-        system "git",
-               "clone",
-               "https://github.com/discourse/discourse-theme-skeleton",
-               tmp,
-               "--depth",
-               "1",
-               "--quiet",
-               exception: true
-        FileUtils.rm_rf(SKELETON_DIR)
-        # Store the local copy for offline use
-        FileUtils.cp_r(tmp, SKELETON_DIR)
-
-        FileUtils.cp_r(SKELETON_DIR, dir)
-      elsif Dir.exist?(SKELETON_DIR)
-        puts "⚠️ No internet connection detected, using the local copy of discourse-theme-skeleton"
-        FileUtils.cp_r(SKELETON_DIR, dir)
-      else
-        raise "🛑 Couldn't download discourse-theme-skeleton"
-      end
+      get_theme_skeleton(dir)
 
       Dir.chdir dir do
         author = UI.ask("Who is authoring the theme?", default: "Discourse").to_s.strip
@@ -64,7 +35,7 @@ module DiscourseTheme
         end
 
         readme = File.read("README.md")
-        readme.sub!("**Theme Name**", "**#{name}**")
+        readme.sub!("**Theme Name**", name)
         File.write("README.md", readme)
 
         encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, "-")
@@ -90,6 +61,43 @@ module DiscourseTheme
 
       puts "✅ Done!"
       puts "See https://meta.discourse.org/t/how-to-develop-custom-themes/60848 for more information!"
+    end
+
+    private
+
+    def self.get_theme_skeleton(dir)
+      if online?
+        puts "Downloading discourse-theme-skeleton"
+        tmp = Dir.mktmpdir
+        system "git",
+               "clone",
+               "https://github.com/discourse/discourse-theme-skeleton",
+               tmp,
+               "--depth",
+               "1",
+               "--quiet",
+               exception: true
+        FileUtils.rm_rf(skeleton_dir)
+        # Store the local copy for offline use
+        FileUtils.cp_r(tmp, skeleton_dir)
+
+        FileUtils.cp_r(skeleton_dir, dir)
+      elsif Dir.exist?(skeleton_dir)
+        puts "⚠️ No internet connection detected, using the local copy of discourse-theme-skeleton"
+        FileUtils.cp_r(skeleton_dir, dir)
+      else
+        raise "🛑 Couldn't download discourse-theme-skeleton"
+      end
+    end
+
+    def self.online?
+      !!Resolv::DNS.new.getaddress("github.com")
+    rescue Resolv::ResolvError => e
+      false
+    end
+
+    def self.skeleton_dir
+      File.expand_path("~/.discourse_theme_skeleton")
     end
   end
 end

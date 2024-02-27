@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+
 require "test_helper"
 require "base64"
 require "mocha/minitest"
+
 class TestCli < Minitest::Test
   def setup
     WebMock.reset!
@@ -346,6 +348,49 @@ class TestCli < Minitest::Test
       )
 
     test_download
+  end
+
+  def test_new
+    DiscourseTheme::Scaffold.expects(:online?).returns(false)
+    DiscourseTheme::Scaffold
+      .expects(:skeleton_dir)
+      .at_least_once
+      .returns(File.join(File.expand_path(File.dirname(__FILE__)), "/fixtures/skeleton-lite"))
+
+    DiscourseTheme::UI
+      .stubs(:ask)
+      .with("What would you like to call your theme?", anything)
+      .returns("my theme")
+    DiscourseTheme::UI.stubs(:ask).with("Who is authoring the theme?", anything).returns("Jane")
+    DiscourseTheme::UI
+      .stubs(:ask)
+      .with("How would you describe this theme?", anything)
+      .returns("A magical theme")
+    DiscourseTheme::UI.stubs(:yes?).with("Is this a component?").returns(false)
+    DiscourseTheme::UI
+      .stubs(:yes?)
+      .with("Would you like to start 'watching' this theme?")
+      .returns(false)
+
+    suppress_output { Dir.chdir(@dir) { DiscourseTheme::Cli.new.run(%w[new foo]) } }
+
+    Dir.chdir(@dir + "/foo") do
+      assert(File.exist?("javascripts/discourse/api-initializers/my-theme.js"))
+
+      assert_equal(
+        "A magical theme",
+        YAML.safe_load(File.read("locales/en.yml"))["en"]["theme_metadata"]["description"],
+      )
+
+      about = JSON.parse(File.read("about.json"))
+      assert_equal("my theme", about["name"])
+      assert_equal("Jane", about["authors"])
+      assert_nil(about["component"])
+      assert_equal({}, about["color_schemes"])
+
+      assert_match("Copyright (c) Jane", File.read("LICENSE"))
+      assert_match("# my theme\n", File.read("README.md"))
+    end
   end
 
   def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: true)
