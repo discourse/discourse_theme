@@ -73,6 +73,8 @@ module DiscourseTheme
         FileUtils.rm_rf(".git")
         system "git", "init", exception: true
         system "git", "symbolic-ref", "HEAD", "refs/heads/main", exception: true
+        system "git", "add", "-A", exception: true
+        system "git", "commit", "-m", "Initial commit"
 
         UI.info "Installing dependencies"
         system "yarn", exception: true
