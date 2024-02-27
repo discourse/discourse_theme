@@ -33,8 +33,6 @@ module DiscourseTheme
       FileUtils.cp_r(SKELETON_DIR, dir)
 
       Dir.chdir dir do
-        FileUtils.rm_rf(".git")
-
         author = UI.ask("Who is authoring the theme?", default: "Discourse").to_s.strip
         description = UI.ask("How would you describe this theme?").to_s.strip
 
@@ -69,7 +67,8 @@ module DiscourseTheme
 
         UI.info "Initializing git repo"
         FileUtils.rm_rf(".git")
-        puts `git init && git symbolic-ref HEAD refs/heads/main`
+        system "git", "init", exception: true
+        system "git", "symbolic-ref", "HEAD", "refs/heads/main", exception: true
 
         UI.info "Installing dependencies"
         puts `yarn`
