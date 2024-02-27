@@ -75,7 +75,7 @@ module DiscourseTheme
         system "git", "symbolic-ref", "HEAD", "refs/heads/main", exception: true
 
         UI.info "Installing dependencies"
-        puts `yarn`
+        system "yarn", exception: true
       end
 
       puts "✅ Done!"
