@@ -57,7 +57,12 @@ module DiscourseTheme
         system "git", "add", *root_files, exception: true
         system "git", "add", ".*", exception: true
         system "git", "add", "locales", exception: true
-        system "git", "commit", "-m", "Initial commit by `discourse_theme` CLI", exception: true
+        system "git",
+               "commit",
+               "-m",
+               "Initial commit by `discourse_theme` CLI",
+               "--quiet",
+               exception: true
 
         UI.info "Installing dependencies"
         system "yarn", exception: true
