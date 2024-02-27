@@ -3,6 +3,13 @@
 require "date"
 require "json"
 require "yaml"
+require "resolv"
+
+def online?
+  !!Resolv::DNS.new.getaddress("github.com")
+rescue Resolv::ResolvError => e
+  false
+end
 
 module DiscourseTheme
   class Scaffold
@@ -23,20 +30,26 @@ module DiscourseTheme
 
       is_component = UI.yes?("Is this a component?")
 
-      if Dir.exist?(SKELETON_DIR)
-        system "git", "pull", chdir: SKELETON_DIR, exception: true
-      else
-        FileUtils.mkdir_p(SKELETON_DIR)
+      if online?
+        tmp = Dir.mktmpdir
         system "git",
                "clone",
                "https://github.com/discourse/discourse-theme-skeleton",
-               SKELETON_DIR,
+               tmp,
                "--depth",
                "1",
                exception: true
-      end
+        FileUtils.rm_rf(SKELETON_DIR)
+        # Store the local copy for offline use
+        FileUtils.cp_r(tmp, SKELETON_DIR)
 
-      FileUtils.cp_r(SKELETON_DIR, dir)
+        FileUtils.cp_r(SKELETON_DIR, dir)
+      elsif Dir.exist?(SKELETON_DIR)
+        puts "No internet connection detected, using the local copy of discourse-plugin-skeleton"
+        FileUtils.cp_r(SKELETON_DIR, dir)
+      else
+        raise "Couldn't download discourse-plugin-skeleton"
+      end
 
       Dir.chdir dir do
         author = UI.ask("Who is authoring the theme?", default: "Discourse").to_s.strip
