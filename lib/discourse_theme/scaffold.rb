@@ -37,10 +37,10 @@ module DiscourseTheme
 
         FileUtils.cp_r(SKELETON_DIR, dir)
       elsif Dir.exist?(SKELETON_DIR)
-        puts "No internet connection detected, using the local copy of discourse-plugin-skeleton"
+        puts "⚠️ No internet connection detected, using the local copy of discourse-plugin-skeleton"
         FileUtils.cp_r(SKELETON_DIR, dir)
       else
-        raise "Couldn't download discourse-plugin-skeleton"
+        raise "🛑 Couldn't download discourse-plugin-skeleton"
       end
 
       Dir.chdir dir do
