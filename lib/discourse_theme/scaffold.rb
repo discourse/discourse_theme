@@ -30,6 +30,7 @@ module DiscourseTheme
                tmp,
                "--depth",
                "1",
+               "--quiet",
                exception: true
         FileUtils.rm_rf(SKELETON_DIR)
         # Store the local copy for offline use
