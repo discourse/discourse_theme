@@ -22,7 +22,7 @@ module DiscourseTheme
       is_component = UI.yes?("Is this a component?")
 
       if online?
-        puts "Downloading discourse-plugin-skeleton"
+        puts "Downloading discourse-theme-skeleton"
         tmp = Dir.mktmpdir
         system "git",
                "clone",
@@ -38,10 +38,10 @@ module DiscourseTheme
 
         FileUtils.cp_r(SKELETON_DIR, dir)
       elsif Dir.exist?(SKELETON_DIR)
-        puts "⚠️ No internet connection detected, using the local copy of discourse-plugin-skeleton"
+        puts "⚠️ No internet connection detected, using the local copy of discourse-theme-skeleton"
         FileUtils.cp_r(SKELETON_DIR, dir)
       else
-        raise "🛑 Couldn't download discourse-plugin-skeleton"
+        raise "🛑 Couldn't download discourse-theme-skeleton"
       end
 
       Dir.chdir dir do
