@@ -50,6 +50,7 @@ module DiscourseTheme
 
         UI.info "Initializing git repo"
         FileUtils.rm_rf(".git")
+        FileUtils.rm_rf("**/.gitkeep")
         system "git", "init", exception: true
         system "git", "symbolic-ref", "HEAD", "refs/heads/main", exception: true
         root_files = Dir.glob("*").select { |f| File.file?(f) }
