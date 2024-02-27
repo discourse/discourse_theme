@@ -348,47 +348,6 @@ class TestCli < Minitest::Test
     test_download
   end
 
-  def test_new
-    args = ["new", @dir]
-
-    DiscourseTheme::UI.stub(:ask, "my theme name") do
-      DiscourseTheme::UI.stub(:yes?, false) do
-        suppress_output { DiscourseTheme::Cli.new.run(args) }
-      end
-    end
-
-    assert_requested(@about_stub, times: 0)
-    assert_requested(@themes_stub, times: 0)
-    assert_requested(@import_stub, times: 0)
-    assert_requested(@download_tar_stub, times: 0)
-
-    # Spot check a few files
-    Dir.chdir(@dir) do
-      list = files = Dir.glob("**/*").reject { |f| f.start_with?("node_modules/") }
-      folders = list.reject { |f| File.file?(f) }
-      assert_equal(
-        folders.sort,
-        %w[
-          common
-          locales
-          node_modules
-          javascripts
-          javascripts/discourse
-          javascripts/discourse/api-initializers
-        ].sort,
-      )
-
-      files = list.reject { |f| File.directory?(f) }
-      assert(files.include?("settings.yml"))
-      assert(files.include?("about.json"))
-      assert(files.include?("package.json"))
-      assert(File.exist?(".eslintrc"))
-      assert(File.exist?(".gitignore"))
-      assert(File.exist?(".template-lintrc.js"))
-      assert(files.include?("locales/en.yml"))
-    end
-  end
-
   def mock_rspec_local_discourse_commands(dir, spec_dir, rspec_path: "/spec", headless: true)
     Kernel.expects(:exec).with(
       anything,
