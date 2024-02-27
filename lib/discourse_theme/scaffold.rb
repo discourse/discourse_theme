@@ -15,19 +15,10 @@ module DiscourseTheme
   class Scaffold
     SKELETON_DIR = File.expand_path("~/.discourse_theme_skeleton")
 
-    def self.generate(dir)
+    def self.generate(dir, name:)
       UI.progress "Generating a scaffold theme at #{dir}"
 
-      name =
-        loop do
-          input = UI.ask("What would you like to call your theme?").to_s.strip
-          if input.empty?
-            UI.error("Theme name cannot be empty")
-          else
-            break input
-          end
-        end
-
+      name = UI.ask("What would you like to call your theme?", default: name).to_s.strip
       is_component = UI.yes?("Is this a component?")
 
       if online?
