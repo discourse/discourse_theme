@@ -31,6 +31,8 @@ module DiscourseTheme
                "clone",
                "https://github.com/discourse/discourse-theme-skeleton",
                SKELETON_DIR,
+               "--depth",
+               "1",
                exception: true
       end
 
