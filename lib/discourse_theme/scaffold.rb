@@ -82,7 +82,7 @@ module DiscourseTheme
         system "git", "init", exception: true
         system "git", "symbolic-ref", "HEAD", "refs/heads/main", exception: true
         system "git", "add", "-A", exception: true
-        system "git", "commit", "-m", "Initial commit"
+        system "git", "commit", "-m", "Initial commit by `discourse_theme` CLI"
 
         UI.info "Installing dependencies"
         system "yarn", exception: true
