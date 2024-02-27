@@ -24,10 +24,14 @@ module DiscourseTheme
       is_component = UI.yes?("Is this a component?")
 
       if Dir.exist?(SKELETON_DIR)
-        puts `cd #{SKELETON_DIR} && git pull`
+        system "git", "pull", chdir: SKELETON_DIR, exception: true
       else
         FileUtils.mkdir_p(SKELETON_DIR)
-        puts `git clone https://github.com/discourse/discourse-theme-skeleton #{SKELETON_DIR}`
+        system "git",
+               "clone",
+               "https://github.com/discourse/discourse-theme-skeleton",
+               SKELETON_DIR,
+               exception: true
       end
 
       FileUtils.cp_r(SKELETON_DIR, dir)
