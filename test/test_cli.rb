@@ -390,6 +390,7 @@ class TestCli < Minitest::Test
 
       assert_match("Copyright (c) Jane", File.read("LICENSE"))
       assert_match("# my theme\n", File.read("README.md"))
+      assert(File.exist?(".github/test"))
     end
   end
 
