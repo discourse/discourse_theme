@@ -57,7 +57,7 @@ module DiscourseTheme
         raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
         raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
 
-        DiscourseTheme::Scaffold.generate(dir)
+        DiscourseTheme::Scaffold.generate(dir, name: args[1])
         watch_theme?(args)
       elsif command == "watch"
         raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)

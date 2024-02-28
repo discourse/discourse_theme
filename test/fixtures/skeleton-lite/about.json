@@ -1,0 +1,13 @@
+{
+  "name": "TODO",
+  "component": true,
+  "authors": "Discourse",
+  "about_url": "TODO: Put your theme's public repo or Meta topic URL here",
+  "license_url": "TODO: Put your theme's LICENSE URL here",
+  "learn_more": "TODO",
+  "theme_version": "0.0.1",
+  "minimum_discourse_version": null,
+  "maximum_discourse_version": null,
+  "assets": {},
+  "modifiers": {}
+}

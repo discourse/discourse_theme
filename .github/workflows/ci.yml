@@ -40,6 +40,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Git
+        run: |
+          git config --global user.email "ci@ci.invalid"
+          git config --global user.name "Discourse CI"
+
       - name: Setup ruby
         uses: ruby/setup-ruby@v1
         with:

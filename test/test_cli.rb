@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+
 require "test_helper"
 require "base64"
 require "mocha/minitest"
+
 class TestCli < Minitest::Test
   def setup
     WebMock.reset!
@@ -349,43 +351,46 @@ class TestCli < Minitest::Test
   end
 
   def test_new
-    args = ["new", @dir]
+    DiscourseTheme::Scaffold.expects(:online?).returns(false)
+    DiscourseTheme::Scaffold
+      .expects(:skeleton_dir)
+      .at_least_once
+      .returns(File.join(File.expand_path(File.dirname(__FILE__)), "/fixtures/skeleton-lite"))
 
-    DiscourseTheme::UI.stub(:ask, "my theme name") do
-      DiscourseTheme::UI.stub(:yes?, false) do
-        suppress_output { DiscourseTheme::Cli.new.run(args) }
-      end
-    end
+    DiscourseTheme::UI
+      .stubs(:ask)
+      .with("What would you like to call your theme?", anything)
+      .returns("my theme")
+    DiscourseTheme::UI.stubs(:ask).with("Who is authoring the theme?", anything).returns("Jane")
+    DiscourseTheme::UI
+      .stubs(:ask)
+      .with("How would you describe this theme?", anything)
+      .returns("A magical theme")
+    DiscourseTheme::UI.stubs(:yes?).with("Is this a component?").returns(false)
+    DiscourseTheme::UI
+      .stubs(:yes?)
+      .with("Would you like to start 'watching' this theme?")
+      .returns(false)
 
-    assert_requested(@about_stub, times: 0)
-    assert_requested(@themes_stub, times: 0)
-    assert_requested(@import_stub, times: 0)
-    assert_requested(@download_tar_stub, times: 0)
+    suppress_output { Dir.chdir(@dir) { DiscourseTheme::Cli.new.run(%w[new foo]) } }
 
-    # Spot check a few files
-    Dir.chdir(@dir) do
-      list = files = Dir.glob("**/*").reject { |f| f.start_with?("node_modules/") }
-      folders = list.reject { |f| File.file?(f) }
+    Dir.chdir(@dir + "/foo") do
+      assert(File.exist?("javascripts/discourse/api-initializers/my-theme.js"))
+
       assert_equal(
-        folders.sort,
-        %w[
-          common
-          locales
-          node_modules
-          javascripts
-          javascripts/discourse
-          javascripts/discourse/api-initializers
-        ].sort,
+        "A magical theme",
+        YAML.safe_load(File.read("locales/en.yml"))["en"]["theme_metadata"]["description"],
       )
 
-      files = list.reject { |f| File.directory?(f) }
-      assert(files.include?("settings.yml"))
-      assert(files.include?("about.json"))
-      assert(files.include?("package.json"))
-      assert(File.exist?(".eslintrc"))
-      assert(File.exist?(".gitignore"))
-      assert(File.exist?(".template-lintrc.js"))
-      assert(files.include?("locales/en.yml"))
+      about = JSON.parse(File.read("about.json"))
+      assert_equal("my theme", about["name"])
+      assert_equal("Jane", about["authors"])
+      assert_nil(about["component"])
+      assert_equal({}, about["color_schemes"])
+
+      assert_match("Copyright (c) Jane", File.read("LICENSE"))
+      assert_match("# my theme\n", File.read("README.md"))
+      assert(File.exist?(".github/test"))
     end
   end
 
