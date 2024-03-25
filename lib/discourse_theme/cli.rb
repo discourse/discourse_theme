@@ -37,6 +37,11 @@ module DiscourseTheme
     end
 
     def run(args)
+      if args.delete("--version")
+        puts VERSION
+        return
+      end
+
       usage unless args[1]
 
       reset = !!args.delete("--reset")
