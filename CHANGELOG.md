@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Suggest the root URL of the local site when running `watch` command
+
+## [2.1.1] - 2024-03-25
+
+### Added
+
 - `--version` to CLI (#46)
 
 ## [2.1.0] - 2024-02-28
