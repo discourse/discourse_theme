@@ -177,7 +177,10 @@ module DiscourseTheme
       end
 
       if !url || @reset
-        url = normalize_url(UI.ask("What is the root URL of your Discourse site?", default: url))
+        url =
+          normalize_url(
+            UI.ask("What is the root URL of your Discourse site?", default: settings.possible_url),
+          )
         url = "http://#{url}" unless url =~ %r{^https?://}
 
         # maybe this is an HTTPS redirect

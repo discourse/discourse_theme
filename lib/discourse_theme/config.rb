@@ -22,6 +22,13 @@ class DiscourseTheme::Config
       set("url", val)
     end
 
+    def possible_url
+      return safe_config["url"] if safe_config["url"]
+
+      first_config = @config.raw_config.values.find { |config| config["url"] }
+      first_config["url"] if first_config
+    end
+
     def theme_id
       safe_config["theme_id"].to_i
     end
