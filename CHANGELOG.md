@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Made `new` command compatible with the replacement of `yarn` with `pnpm` as a package manager, and will prompt users to install `pnpm` if not installed already.
 
-## [2.1.2] - 2024-03-25
+## [2.1.2] - 2024-04-16
 
 ### Added
 
