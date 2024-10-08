@@ -61,6 +61,7 @@ module DiscourseTheme
         end
         raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
         raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
+        raise DiscourseTheme::ThemeError.new "pnpm is not installed" if !command?("pnpm")
 
         DiscourseTheme::Scaffold.generate(dir, name: args[1])
         watch_theme?(args)
