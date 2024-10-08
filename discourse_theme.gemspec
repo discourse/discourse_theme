@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 lib = File.expand_path("../lib", __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+$LOAD_PATH.unshift(lib) if !$LOAD_PATH.include?(lib)
 require "discourse_theme/version"
 
 Gem::Specification.new do |spec|
@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "guard"
   spec.add_development_dependency "guard-minitest"
   spec.add_development_dependency "webmock"
-  spec.add_development_dependency "rubocop-discourse", "~> 3.6.0"
+  spec.add_development_dependency "rubocop-discourse", "~> 3.8.1"
   spec.add_development_dependency "m"
   spec.add_development_dependency "syntax_tree"
   spec.add_development_dependency "mocha"
