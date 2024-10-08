@@ -45,6 +45,9 @@ jobs:
           git config --global user.email "ci@ci.invalid"
           git config --global user.name "Discourse CI"
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Setup ruby
         uses: ruby/setup-ruby@v1
         with:
