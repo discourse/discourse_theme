@@ -65,7 +65,14 @@ module DiscourseTheme
                exception: true
 
         UI.info "Installing dependencies"
-        system "yarn", exception: true
+        if File.exist?("yarn.lock")
+          system "yarn", exception: true
+        elsif File.exist?("pnpm-lock.yaml")
+          system "pnpm", "install", exception: true
+        else
+          UI.warn "No lock file found. Defaulting to pnpm."
+          system "pnpm", "install", exception: true
+        end
       end
 
       puts "✅ Done!"

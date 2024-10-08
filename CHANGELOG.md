@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.1] - 2024-03-25
+## [2.1.3] - 2024-10-09
+
+### Added
+
+- Made `new` command compatible with the replacement of `yarn` with `pnpm` as a package manager, and will prompt users to install `pnpm` if not installed already.
+
+## [2.1.2] - 2024-04-16
 
 ### Added
 
