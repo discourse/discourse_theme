@@ -16,7 +16,7 @@ module DiscourseTheme
 
     def watch
       listener =
-        Listen.to(@dir) do |modified, added, removed|
+        Listen.to(@dir, ignore: %r{^node_modules/}) do |modified, added, removed|
           begin
             if modified.length == 1 && added.length == 0 && removed.length == 0 &&
                  (resolved = resolve_file(modified[0]))
