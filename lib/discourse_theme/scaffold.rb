@@ -64,19 +64,16 @@ module DiscourseTheme
                "--quiet",
                exception: true
 
-        UI.info "Installing dependencies"
-        if File.exist?("yarn.lock")
-          system "yarn", exception: true
-        elsif File.exist?("pnpm-lock.yaml")
+        if Cli.command?("pnpm")
+          UI.info "Installing dependencies"
           system "pnpm", "install", exception: true
         else
-          UI.warn "No lock file found. Defaulting to pnpm."
-          system "pnpm", "install", exception: true
+          UI.warn "`pnpm` is not installed, skipping installation of linting dependencies"
         end
       end
 
       puts "✅ Done!"
-      puts "See https://meta.discourse.org/t/how-to-develop-custom-themes/60848 for more information!"
+      puts "See https://meta.discourse.org/t/93648 for more information!"
     end
 
     private

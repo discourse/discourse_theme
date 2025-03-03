@@ -7,8 +7,8 @@ require "discourse_theme/version"
 Gem::Specification.new do |spec|
   spec.name = "discourse_theme"
   spec.version = DiscourseTheme::VERSION
-  spec.authors = ["Sam Saffron"]
-  spec.email = ["sam.saffron@gmail.com"]
+  spec.authors = ["Discourse Team"]
+  spec.email = ["team@discourse.org"]
 
   spec.summary = "CLI helper for creating Discourse themes"
   spec.description = "CLI helper for creating Discourse themes"
