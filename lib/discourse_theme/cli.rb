@@ -13,6 +13,10 @@ module DiscourseTheme
       @@cli_settings_filename = filename
     end
 
+    def self.command?(cmd)
+      system "which", cmd, out: File::NULL, err: File::NULL
+    end
+
     def usage
       puts <<~USAGE
       Usage: discourse_theme COMMAND [DIR] [OPTIONS]
@@ -59,9 +63,7 @@ module DiscourseTheme
         if Dir.exist?(dir) && !Dir.empty?(dir)
           raise DiscourseTheme::ThemeError.new "'#{dir}' is not empty"
         end
-        raise DiscourseTheme::ThemeError.new "git is not installed" if !command?("git")
-        raise DiscourseTheme::ThemeError.new "yarn is not installed" if !command?("yarn")
-        raise DiscourseTheme::ThemeError.new "pnpm is not installed" if !command?("pnpm")
+        raise DiscourseTheme::ThemeError.new "git is not installed" if !Cli.command?("git")
 
         DiscourseTheme::Scaffold.generate(dir, name: args[1])
         watch_theme?(args)
@@ -247,20 +249,6 @@ module DiscourseTheme
       else
         false
       end
-    end
-
-    def command?(cmd)
-      exts = ENV["PATHEXT"] ? ENV["PATHEXT"].split(";") : [""]
-      ENV["PATH"]
-        .split(File::PATH_SEPARATOR)
-        .each do |path|
-          exts.each do |ext|
-            exe = File.join(path, "#{cmd}#{ext}")
-            return true if File.executable?(exe) && !File.directory?(exe)
-          end
-        end
-
-      false
     end
 
     def watch_theme?(args)
