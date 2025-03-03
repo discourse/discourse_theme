@@ -39,10 +39,14 @@ module DiscourseTheme
         File.write("README.md", readme)
 
         encoded_name = name.downcase.gsub(/[^a-zA-Z0-9_-]+/, "-")
-        FileUtils.mv(
-          "javascripts/discourse/api-initializers/todo.js",
-          "javascripts/discourse/api-initializers/#{encoded_name}.js",
-        )
+
+        todo_initializer = "javascripts/discourse/api-initializers/todo.js"
+        if File.exist?(todo_initializer)
+          FileUtils.mv(
+            "javascripts/discourse/api-initializers/todo.js",
+            "javascripts/discourse/api-initializers/#{encoded_name}.gjs",
+          )
+        end
 
         i18n = YAML.safe_load(File.read("locales/en.yml"))
         i18n["en"]["theme_metadata"]["description"] = description

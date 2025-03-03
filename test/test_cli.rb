@@ -375,7 +375,7 @@ class TestCli < Minitest::Test
     suppress_output { Dir.chdir(@dir) { DiscourseTheme::Cli.new.run(%w[new foo]) } }
 
     Dir.chdir(@dir + "/foo") do
-      assert(File.exist?("javascripts/discourse/api-initializers/my-theme.js"))
+      assert(File.exist?("javascripts/discourse/api-initializers/my-theme.gjs"))
 
       assert_equal(
         "A magical theme",
