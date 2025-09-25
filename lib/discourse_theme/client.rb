@@ -6,10 +6,10 @@ module DiscourseTheme
 
     attr_reader :url
 
-    def initialize(dir, settings, reset:)
+    def initialize(dir, settings, reset:, url: nil)
       @reset = reset
-      @url = guess_url(settings)
-      @api_key = guess_api_key(settings)
+      @url = url || guess_url(settings)
+      @api_key = guess_api_key(settings, @url)
 
       raise "Missing site to synchronize with!" if !@url
       raise "Missing api key!" if !@api_key
@@ -204,10 +204,15 @@ module DiscourseTheme
       url&.strip&.chomp("/")
     end
 
-    def guess_api_key(settings)
+    def guess_api_key(settings, url = nil)
       api_key = ENV["DISCOURSE_API_KEY"]
       UI.progress "Using api key from DISCOURSE_API_KEY" if api_key
 
+      if !api_key && url
+        api_key = settings.api_key_for_url(url)
+        UI.progress "Using api key for #{url} from #{DiscourseTheme::Cli.settings_file}" if api_key
+      end
+      
       if !api_key && settings.api_key
         api_key = settings.api_key
         UI.progress "Using api key from #{DiscourseTheme::Cli.settings_file}"
@@ -216,7 +221,13 @@ module DiscourseTheme
       if !api_key || @reset
         api_key = UI.ask("What is your API key?", default: api_key).strip
         if UI.yes?("Would you like this API key stored in #{DiscourseTheme::Cli.settings_file}?")
-          settings.api_key = api_key
+          if url
+            settings.raw_config["api_keys"] ||= {}
+            settings.raw_config["api_keys"][url] = api_key
+            settings.save
+          else
+            settings.api_key = api_key
+          end
         else
           settings.api_key = nil
         end
