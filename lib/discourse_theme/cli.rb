@@ -142,8 +142,6 @@ module DiscourseTheme
         theme_id = uploader.upload_full_theme(skip_migrations: skip_migrations(theme, dir))
 
         if selected_site
-          site_config = settings.site_config(selected_site)
-          site_config["theme_id"] = theme_id
           settings.add_site(selected_site, url: site_config["url"], theme_id: theme_id, components: components)
         else
           settings.theme_id = theme_id
