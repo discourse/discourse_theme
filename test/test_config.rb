@@ -79,4 +79,18 @@ class TestConfig < Minitest::Test
   ensure
     File.unlink(filename)
   end
+
+  def test_multi_site_configuration
+    filename = new_temp_filename
+    config = DiscourseTheme::Config.new filename
+    settings = config["/test/dir"]
+
+    assert_equal(false, settings.has_multiple_sites?)
+    
+    settings.add_site("localhost", url: "http://localhost:3000", theme_id: 123)
+    assert_equal(true, settings.has_multiple_sites?)
+    assert_equal("http://localhost:3000", settings.site_config("localhost")["url"])
+  ensure
+    File.unlink(filename)
+  end
 end

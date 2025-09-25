@@ -752,4 +752,21 @@ class TestCli < Minitest::Test
 
     assert_equal(settings(@spec_dir).local_discourse_directory, "")
   end
+
+  def test_sites_command
+    DiscourseTheme::UI.stub(:select, "Exit") do
+      suppress_output { DiscourseTheme::Cli.new.run(["sites", @dir]) }
+    end
+    assert(true)
+  end
+
+  def test_watch_with_multi_site
+    settings.add_site("localhost", url: "http://localhost:3000", theme_id: 123)
+    DiscourseTheme::SiteSelector.stub(:select_site, "localhost") do
+      DiscourseTheme::UI.stub(:select, ->(_, options) { options[0] }) do
+        suppress_output { DiscourseTheme::Cli.new.run(["watch", @dir]) }
+      end
+    end
+    assert_requested(@import_stub, times: 1)
+  end
 end
