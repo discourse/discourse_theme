@@ -27,6 +27,7 @@ module DiscourseTheme
         upload DIR            - Uploads the theme from the specified directory to Discourse.
         watch DIR             - Watches the theme in the specified directory and synchronizes any changes with Discourse.
                               If multiple sites are configured, you'll be prompted to select which site to watch.
+        sites DIR             - Manages multiple site configurations for a directory.
         rspec DIR [OPTIONS]   - Runs the RSpec tests in the specified directory. The tests can be run using a local Discourse repository or a Docker container.
           --headful           - Runs the RSpec system type tests in headful mode. Applies to both modes.
 
@@ -216,6 +217,8 @@ module DiscourseTheme
         else
           UI.info "Manage: #{client.root}/admin/customize/themes/#{theme_id}"
         end
+      elsif command == "sites"
+        manage_sites(dir, settings)
       elsif command == "rspec"
         DiscourseTheme::CliCommands::Rspec.run(
           settings: config[dir.split("/spec")[0]],
@@ -291,6 +294,73 @@ module DiscourseTheme
 
     def extract_theme_id(rendered_name)
       /\(id:([0-9]+)\)$/.match(rendered_name)[1].to_i
+    end
+
+    def manage_sites(dir, settings)
+      raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
+      
+      loop do
+        options = {}
+        
+        if settings.has_multiple_sites?
+          settings.site_names.each do |site_name|
+            site_config = settings.site_config(site_name)
+            url = site_config["url"]
+            theme_id = site_config["theme_id"]
+            display_name = "#{site_name} (#{url}"
+            display_name += ", theme: #{theme_id}" if theme_id && theme_id != 0
+            display_name += ")"
+            options[display_name] = "view_#{site_name}"
+          end
+          options["Add a new site"] = :add
+          options["Remove a site"] = :remove if settings.site_names.any?
+        else
+          options["Add your first site"] = :add
+        end
+        
+        options["Exit"] = :exit
+        
+        choice = UI.select("Site Management - #{File.basename(dir)}", options.keys)
+        action = options[choice]
+        
+        if action == :exit
+          break
+        elsif action == :add
+          DiscourseTheme::SiteSelector.configure_new_site(settings, dir)
+        elsif action == :remove
+          remove_site(settings)
+        elsif action.to_s.start_with?("view_")
+          site_name = action.to_s.sub("view_", "")
+          view_site(settings, site_name)
+        end
+      end
+    end
+
+    def remove_site(settings)
+      return unless settings.has_multiple_sites?
+      
+      sites = settings.site_names
+      choice = UI.select("Which site would you like to remove?", sites + ["Cancel"])
+      
+      if choice != "Cancel" && sites.include?(choice)
+        if UI.yes?("Are you sure you want to remove site '#{choice}'?")
+          settings.remove_site(choice)
+          UI.success "Site '#{choice}' has been removed."
+        end
+      end
+    end
+
+    def view_site(settings, site_name)
+      site_config = settings.site_config(site_name)
+      
+      UI.info "\nSite: #{site_name}"
+      UI.info "URL: #{site_config['url']}"
+      UI.info "Theme ID: #{site_config['theme_id'] || 'Not set'}"
+      UI.info "Components: #{site_config['components'] || 'Default'}"
+      
+      if UI.yes?("\nWould you like to start watching this site?")
+        UI.info "Use 'discourse_theme watch #{File.basename(settings.filename.gsub('/.discourse_theme', ''))}' and select this site."
+      end
     end
   end
 end
