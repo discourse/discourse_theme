@@ -23,6 +23,7 @@ require_relative "discourse_theme/downloader"
 require_relative "discourse_theme/uploader"
 require_relative "discourse_theme/watcher"
 require_relative "discourse_theme/scaffold"
+require_relative "discourse_theme/site_selector"
 
 module DiscourseTheme
   class ThemeError < StandardError
