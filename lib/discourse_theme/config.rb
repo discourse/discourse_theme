@@ -57,6 +57,72 @@ class DiscourseTheme::Config
       set("local_discourse_directory", dir)
     end
 
+    def sites
+      safe_config["sites"] || {}
+    end
+
+    def add_site(name, url:, theme_id:, components: nil)
+      sites_config = sites
+      sites_config[name] = {
+        "url" => url,
+        "theme_id" => theme_id
+      }
+      sites_config[name]["components"] = components if components
+      set("sites", sites_config)
+    end
+
+    def remove_site(name)
+      sites_config = sites
+      sites_config.delete(name)
+      set("sites", sites_config)
+    end
+
+    def site_names
+      sites.keys
+    end
+
+    def site_config(name)
+      sites[name] || {}
+    end
+
+    def has_multiple_sites?
+      sites.any?
+    end
+
+    def effective_url(site_name = nil)
+      if site_name && sites[site_name]
+        sites[site_name]["url"]
+      elsif has_multiple_sites? && site_name.nil?
+        nil
+      else
+        url
+      end
+    end
+
+    def effective_theme_id(site_name = nil)
+      if site_name && sites[site_name]
+        sites[site_name]["theme_id"].to_i
+      elsif has_multiple_sites? && site_name.nil?
+        nil
+      else
+        theme_id
+      end
+    end
+
+    def effective_components(site_name = nil)
+      if site_name && sites[site_name]
+        sites[site_name]["components"]
+      elsif has_multiple_sites? && site_name.nil?
+        nil
+      else
+        components
+      end
+    end
+
+    def api_key_for_url(url)
+      search_api_key(url)
+    end
+
     protected
 
     def set(name, val)
