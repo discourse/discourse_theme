@@ -11,7 +11,7 @@ module DiscourseTheme
           options["#{site_name} (#{site_config['url']})"] = site_name
         end
         
-        options["Configure a new site"] = :new_site
+        options["Add a new site"] = :new_site
         
         choice = UI.select("Which site would you like to watch?", options.keys)
         selected = options[choice]
@@ -31,7 +31,7 @@ module DiscourseTheme
     end
     
     def self.configure_new_site(settings, dir)
-      UI.info "Configuring a new site..."
+      UI.info "Adding a new site..."
       
       site_name = UI.ask("Enter a name for this site (e.g., 'localhost', 'staging', 'production'):")
       return nil if site_name.nil? || site_name.strip.empty?
