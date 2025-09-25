@@ -26,6 +26,7 @@ module DiscourseTheme
         download DIR          - Downloads a theme from the server and stores it in the specified directory.
         upload DIR            - Uploads the theme from the specified directory to Discourse.
         watch DIR             - Watches the theme in the specified directory and synchronizes any changes with Discourse.
+                              If multiple sites are configured, you'll be prompted to select which site to watch.
         rspec DIR [OPTIONS]   - Runs the RSpec tests in the specified directory. The tests can be run using a local Discourse repository or a Docker container.
           --headful           - Runs the RSpec system type tests in headful mode. Applies to both modes.
 
@@ -69,13 +70,27 @@ module DiscourseTheme
         watch_theme?(args)
       elsif command == "watch"
         raise DiscourseTheme::ThemeError.new "'#{dir} does not exist" unless Dir.exist?(dir)
-        client = DiscourseTheme::Client.new(dir, settings, reset: reset)
+        
+        selected_site = DiscourseTheme::SiteSelector.select_site(settings, dir)
+        
+        if selected_site.nil?
+          client = DiscourseTheme::Client.new(dir, settings, reset: reset)
+          theme_id = settings.theme_id
+          components = settings.components
+        else
+          site_config = settings.site_config(selected_site)
+          client = DiscourseTheme::Client.new(dir, settings, reset: reset, url: site_config["url"])
+          theme_id = site_config["theme_id"]
+          components = site_config["components"]
+          
+          UI.info "Watching site: #{selected_site} (#{site_config['url']})"
+        end
 
         theme_list = client.get_themes_list
 
         options = {}
 
-        if theme_id && theme = theme_list.find { |t| t["id"] == theme_id }
+        if theme_id && theme_id != 0 && theme = theme_list.find { |t| t["id"] == theme_id }
           options["Sync with existing theme: '#{theme["name"]}' (id:#{theme_id})"] = :default
         end
 
@@ -123,8 +138,16 @@ module DiscourseTheme
 
         UI.progress "Uploading theme from #{dir}"
 
-        settings.theme_id =
-          theme_id = uploader.upload_full_theme(skip_migrations: skip_migrations(theme, dir))
+        theme_id = uploader.upload_full_theme(skip_migrations: skip_migrations(theme, dir))
+
+        if selected_site
+          site_config = settings.site_config(selected_site)
+          site_config["theme_id"] = theme_id
+          settings.add_site(selected_site, url: site_config["url"], theme_id: theme_id, components: components)
+        else
+          settings.theme_id = theme_id
+          settings.components = components if components
+        end
 
         UI.success "Theme uploaded (id:#{theme_id})"
         UI.info "Preview: #{client.url}/?preview_theme_id=#{theme_id}"
